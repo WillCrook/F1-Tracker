@@ -1,6 +1,23 @@
 # F1 Tracker A Level Comp Sci NEA
 
+## Setup Virtual Environment
+```
+python -m venv .venv
+. .venv/bin/activate
 
+python3 -m pip install -r requirements.txt 
+python -c 'import secrets; print(secrets.token_hex())'
+
+```
+
+## Starting Flask App
+
+flask --app f1Tracker.app run --debug
+
+
+## Helpful Tools and References
+
+https://jinja.palletsprojects.com/en/3.1.x/templates/
 
 ## Getting started
 
