@@ -1,0 +1,12 @@
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS user;
+
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL
+);
+
+CREATE TABLE circuit (
+    track TEXT, 
+)

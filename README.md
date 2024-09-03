@@ -14,10 +14,17 @@ python -c 'import secrets; print(secrets.token_hex())'
 
 flask --app f1Tracker.app run --debug
 
+## FastF1
+```
+python -m f1Tracker.f1data
+```
 
 ## Helpful Tools and References
 
 https://jinja.palletsprojects.com/en/3.1.x/templates/
+
+Replacement for Ergast
+https://github.com/theOehrly/Fast-F1/discussions/445#discussioncomment-10380182
 
 ## Getting started
 
