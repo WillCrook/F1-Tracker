@@ -9,7 +9,7 @@ from pprint import pprint
 from datetime import datetime
 
 
-def getUpcomingGrandPrix():
+def getUpcomingGrandPrixInfo():
     """
     [
         "Track Length: 5.9km",
@@ -20,17 +20,16 @@ def getUpcomingGrandPrix():
         "Pit Stop Loss Time: 20 Seconds"
     ]
     """
-    up_gp = fastf1.get_events_remaining().iloc[0].to_dict()
+    upcomingEvent = fastf1.get_events_remaining().iloc[0].to_dict()
     up_gp_list = []
+    date = upcomingEvent['EventDate']
+    lastCircuitInfo = fastf1.get_session((upcomingEvent['EventDate'].year)-1, upcomingEvent['EventName'], 'R')
+    lastCircuitInfo.load(laps = True, telemetry = False, weather = False, messages = False)
+    for element in ["Driver", "LapTime"]:
+        up_gp_list.append(lastCircuitInfo.laps.pick_fastest().to_dict()[element])
     for element in ['EventName', 'Location', 'RoundNumber', 'EventDate']:
-        up_gp_list.append(up_gp[element])
-    return up_gp_list
+        up_gp_list.append(upcomingEvent[element])
+    return up_gp_list 
 
 
-@logger.catch
-def main():
-    pprint(fastf1.get_events_remaining().iloc[0].to_dict())
-    
-
-if __name__ == "__main__":
-    main()
+print(getUpcomingGrandPrixInfo())

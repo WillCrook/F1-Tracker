@@ -1,6 +1,5 @@
 from flask import Flask, render_template, send_from_directory, session, request, redirect, url_for, flash
 from f1Tracker import db
-from f1Tracker import f1data
 
 
 app = Flask(__name__)
@@ -37,26 +36,26 @@ refactor : https://flask.palletsprojects.com/en/3.0.x/tutorial/views/#the-first-
 def login():
     if request.method == 'POST':
         # check datbase username and password
-        users = db.query_db('select * from users where username = ?', [request.form['username']])
+        users = db.query_db('select * from users where email = ?', [request.form['email']])
         if len(users) == 0:
-            values = (request.form['username'], request.form['password'])
-            app.logger.info(f'New user {request.form['username']} with password {request.form['password']}')
-            db.get_db().execute('INSERT INTO users (username, password) VALUES (?, ?)', values)
+            values = (request.form['email'], request.form['password'])
+            app.logger.info(f'New user {request.form['email']} with password {request.form['password']}')
+            db.get_db().execute('INSERT INTO users (email, password) VALUES (?, ?)', values)
             db.get_db().commit()
         else:
             user = users[0]
             if user['password'] != request.form['password']:
-                app.logger.warning(f'user {request.form['username']} used incorrect password {request.form['password']}')
+                app.logger.warning(f'user {request.form['email']} used incorrect password {request.form['password']}')
                 flash('Incorrect password')
                 return redirect(url_for('login'))
-        session['username'] = request.form['username']
-        app.logger.info(f'user {user['username']} logged in')
+        session['email'] = request.form['email']
+        app.logger.info(f'user {user['emai']} logged in')
         return redirect(url_for('home'))
     
     if request.method == 'GET':
         return '''
             <form method="post">
-                <p><input type=text name=username>
+                <p><input type=text name=email>
                 <p><input type=text name=password>
                 <p><input type=submit value=Login>
             </form>
@@ -65,7 +64,13 @@ def login():
 
         # return render_template('login.html')
     
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == "POST":
+        return redirect(url_for('home'))
     
+    if request.method == 'GET':
+        return
 
 @app.route('/logout')
 def logout():

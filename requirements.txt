@@ -2,3 +2,5 @@ flask
 fastf1
 pytest
 loguru
+pytest-cov
+pytest-loguru

@@ -10,6 +10,15 @@ python -c 'import secrets; print(secrets.token_hex())'
 
 ```
 
+## Git commit
+```
+git status
+git add --all
+git commit -a -m 'db'
+git push
+```
+
+
 ## Starting Flask App
 
 flask --app f1Tracker.app run --debug
@@ -18,7 +27,10 @@ flask --app f1Tracker.app run --debug
 ```
 python -m f1Tracker.f1data
 ```
-
+## Unit Testing
+```
+pytest --cov=f1Tracker tests/
+```
 ## Helpful Tools and References
 
 https://jinja.palletsprojects.com/en/3.1.x/templates/
