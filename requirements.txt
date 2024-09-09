@@ -4,4 +4,4 @@ pytest
 loguru
 pytest-cov
 pytest-loguru
-sklearn
+scikit-learn
