@@ -153,28 +153,64 @@
 <main class="form-signin w-50 m-auto">
   <form method="post">
     <img class="mb-4" src="https://d3faj0w6aqatyx.cloudfront.net/uploads/2018/01/19151152/FORMULA-1%C2%AE-UNLEASHES-NEW-BRAND-IDENTITY-INSPIRED-BY-ITS-FANS-OPTION-2.jpg" alt="" width="72" height="57">
-    <h1 class="h3 mb-3 fw-normal">Please sign in</h1>
+    <h1 class="h3 mb-3 fw-normal">Please Register</h1>
 
     <div class="form-floating">
       <input type="email" class="form-control" id="floatingInput" placeholder="name@example.com" name = "email">
       <label for="floatingInput">Email address</label>
     </div>
+
+    <div class="form-floating">
+        <input type="firstName" class="form-control" id="floatingInput" placeholder="John Doe" name = "firstName">
+        <label for="floatingInput">First Name</label>
+      </div>
     <div class="form-floating">
       <input type="password" class="form-control" id="floatingPassword" placeholder="Password" name = "password">
       <label for="floatingPassword">Password</label>
-    </div>
-    {% if incorrectpass %}
-    <div class="alert alert-danger" role="alert">
-    Incorrect Password! Please Try Again :/
-    </div>
-    {% endif %}
+    </div> 
+    <select class="form-select" aria-label="Default select example" name = "driver" type = "driver">
+      <option selected>Favourite Driver</option>
+      <option value="1">Charles Leclerc</option>
+      <option value="2">Max Verstappen</option>
+      <option value="3">Lewis Hamilton</option>
+      <option value="4">Lando Norris</option>
+      <option value="5">Fernando Alonso</option>
+      <option value="6">Oscar Piastri</option>
+      <option value="7">George Russel</option>
+      <option value="8">Carlos Sainz</option>
+      <option value="9">Sergio Perez</option>
+      <option value="10">Nico Hulkenburg</option>
+      <option value="11">Daniel Riccardo</option>
+      <option value="12">Yuki Tsunoda</option>
+      <option value="13">Kevin Magnussen</option>
+      <option value="14">Alex Albon</option>
+      <option value="15">Esteban Ocon</option>
+      <option value="16">Zhou Guanyu</option>
+      <option value="17">Lance Stroll</option>
+      <option value="18">Valtteri Bottas</option>
+      <option value="19">Franco Colapinto</option>
+      <option value="20">Pierre Gasly</option>
+    </select>
+    <select class="form-select" aria-label="Default select example" name = "team" type = "team">
+      <option selected>Favourite Team</option>
+      <option value="1">Ferrari</option>
+      <option value="2">Redbull</option>
+      <option value="3">Mercedes</option>
+      <option value="4">Mclaren</option>
+      <option value="5">Aston Martin</option>
+      <option value="6">Alpine</option>
+      <option value="7">RB</option>
+      <option value="8">Sauber</option>
+      <option value="9">Williams</option>
+      <option value="10">Haas</option>
+    </select>
     <div class="form-check text-start my-3">
-      <input class="form-check-input" type="checkbox" value="remember-me" id="flexCheckDefault">
+      <input class="form-check-input" type="checkbox" value="newsletter" id="flexCheckDefault" name = newsletter>
       <label class="form-check-label" for="flexCheckDefault">
-        Remember me
+        Newsletter
       </label>
     </div>
-    <button class="btn btn-primary w-100 py-2" value = "Login" type="submit">Sign in</button>
+    <button class="btn btn-primary w-100 py-2" value = "Register" type="submit">Register</button>
   
   </form>
 </main>

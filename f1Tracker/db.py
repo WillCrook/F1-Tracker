@@ -39,13 +39,13 @@ def close_connection():
     if db is not None:
         db.close()
 
-def init_db():
-    db = sqlite3.connect(DATABASE)
-    db.cursor().execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT, password TEXT)")
+# def init_db():
+#     db = sqlite3.connect(DATABASE)
+#     db.cursor().execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT, password TEXT)")
     
-    values = ('WillCrook', 'wishstream')
-    db.cursor().execute("INSERT INTO users VALUES(null, ?, ?)", values)
-    db.close()
+#     values = ('WillCrook', 'wishstream')
+#     db.cursor().execute("INSERT INTO users VALUES(null, ?, ?)", values)
+#     db.close()
 
 def init_db_sql_file(sql_file='./f1Tracker/schema.sql'):
     db = sqlite3.connect(DATABASE)
