@@ -14,6 +14,7 @@ docs/_build
 .venv/
 venv/
 database.db
+f1db_csv
 
 
 # Include tracked hidden files and directories in search and diff tools

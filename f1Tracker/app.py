@@ -1,9 +1,13 @@
 from flask import Flask, render_template, send_from_directory, session, request, redirect, url_for, flash
 from f1Tracker import db
 from f1Tracker import f1data
-# from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
+from f1Tracker import ml
+from flask_caching import Cache
 
 app = Flask(__name__)
+
+cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})  # Use SimpleCache for in-memory caching
 
 # App secret key - set using python -c 'import secrets; print(secrets.token_hex())'
 app.secret_key = b'9417b2d7beab235eae274c28716b73e3c06fcb9a898bd4a930301cc4c3a2df9d'
@@ -40,16 +44,9 @@ def login():
         users = db.query_db('select * from users where email = ?', [request.form['email']])
         if len(users) == 0:
             return redirect(url_for('register'))
-        # check datbase username and password
-        # users = db.query_db('select * from users where email = ?', [request.form['email']])
-        # if len(users) == 0:
-        #     values = (request.form['email'], request.form['password'])
-        #     app.logger.info(f'New user {request.form['email']} with password {request.form['password']}')
-        #     db.get_db().execute('INSERT INTO users (email, password) VALUES (?, ?)', values)
-        #     db.get_db().commit()
 
         user = users[0]
-        if user['password'] != request.form['password']:
+        if not check_password_hash(user['password'], request.form['password']):
             app.logger.warning(f'user {request.form['email']} used incorrect password {request.form['password']}')
             flash('Incorrect password')
             incorrectPass = True
@@ -63,24 +60,13 @@ def login():
         
         return render_template('login.html', incorrectpass=incorrectPass )
         
-    # '''
-    #         <form method="post">
-    #             <p><input type=text name=email>
-    #             <p><input type=text name=password>
-    #             <p><input type=submit value=Login>
-    #         </form>
-    #     '''
-
-
-        # return render_template('login.html')
-    
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     try:
         if request.method == "POST":
             email = request.form['email']
             first_name = request.form['firstName']
-            password = request.form['password']
+            password = generate_password_hash(request.form['password'])
             driver = request.form['driver']
             team = request.form['team']
             newsletter = request.form.get('newsletter', 0)
@@ -109,20 +95,10 @@ def logout():
     session.pop('email', None)
     return redirect(url_for('home'))
  
-
-# def upcomingGrandPrixList():
-
-#     return f1data.getUpcomingGrandPrixInfo
-
-# [
-#         "Track Length: 5.9km",
-#         "Lap Record: 1m 15.082",
-#         "Most Pole Postions: Charles Leclerc(16)",
-#         "Most Wins: Charles Leclerc(16)",
-#         "Safety Car Probabillity: 50%",
-#         "Pit Stop Loss Time: 20 Seconds"
-#     ]
-
+#Cache used to enhance perfomance of the website
+@cache.cached(timeout=3600, key_prefix='upcoming_grand_prix')
+def getUpcomingGrandPrixInfo():
+    return f1data.getUpcomingGrandPrixInfo()
 
 def personalisedData():
     return [
@@ -141,21 +117,13 @@ def personalisedData():
          }   
     ]
 
-def driverRankingsQuali():
-    return [
-        {
-        'driver': 'Lec',
-        'predictioncertainty': '0%',
-        'rank': '1'
-    },
-    {
-        'driver': 'Ver',
-        'predictioncertainty': '0%',
-        'rank': '2'
-        }
-        ]
-
+#Cache again used otherwise the processing would be through the roof
+@cache.cached(timeout=3600, key_prefix='driver_rankings_quali')
 def driverRankingsRace():
+    return ml.getRacePredictions()
+        
+
+def driverRankingsQuali():
     return [
         {
         'driver': 'Lec',
@@ -199,8 +167,7 @@ def home():
         'highlights' : personalisedData(), # db
         'driverrankingsquali': driverRankingsQuali(), # db / ML
         'driverrankingsrace': driverRankingsRace(), # db / ML
-        'upcominggrandprixlist': f1data.getUpcomingGrandPrixInfo(), # api
-        'dropdowns' : dropDowns(), # api 
+        'upcominggrandprixlist': getUpcomingGrandPrixInfo(), # api 
         'practiseresults' : practiseResults(), # api
         'predictionaccuracy' : predictionAccuracy(), # api
         'signedin' : getSignedIn()

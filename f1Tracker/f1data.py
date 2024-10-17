@@ -7,7 +7,7 @@ import fastf1
 from loguru import logger
 from pprint import pprint
 from datetime import datetime
-from sklearn import DecisionTreeRegressor
+# from sklearn import DecisionTreeRegressor
 import pandas as pd
 
 def getUpcomingGrandPrixInfo():
@@ -34,3 +34,4 @@ def getUpcomingGrandPrixInfo():
         return up_gp_list 
     except:
         return ["Unable to retrieve F1 Data","Error"]
+

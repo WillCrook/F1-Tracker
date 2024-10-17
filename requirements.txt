@@ -5,3 +5,6 @@ loguru
 pytest-cov
 pytest-loguru
 scikit-learn
+xgboost
+torch
+Flask-Caching
