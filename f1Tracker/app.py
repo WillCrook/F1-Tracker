@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_directory, session, request, redirect, url_for, flash
+from flask import Flask, render_template, send_from_directory, session, request, redirect, url_for, flash, send_file
 from f1Tracker import db
 from f1Tracker import f1data
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -222,7 +222,7 @@ def delete_account():
 #Cache used to enhance perfomance of the website
 @cache.cached(timeout=3600, key_prefix='upcoming_grand_prix')
 def getUpcomingGrandPrixInfo():
-    return f1_data.getUpcomingGrandPrixInfo()
+    return f1_data.get_upcoming_grand_prix_info()
 
 def personalisedData():
     return [
@@ -255,20 +255,32 @@ def qualiResults():
     return [
         "Top Speed: Charles Leclerc"
     ]
+@app.route('/generate-graph', methods=['GET'])
+def generate_graph():
+    graph_type = request.args.get('graphType')
+    grand_prix = request.args.get('grandPrix')
+    
+    # Based on the graph type and grand prix, generate the graph
+    if graph_type == 'Position Changed during a Race':
+        img = f1_data.get_positions_change_during_a_race(grand_prix)
+    elif graph_type == 'Gear Shifts on Track':
+        img = f1_data.get_gear_shifts_on_track(grand_prix)
+    # Add more conditions for other graph types...
 
-def displayGraph():
-    pass
+    # Return the image as a response
+    return send_file(img, mimetype='image/png')
 
 def dropDowns():
     return [
+         {
+            'title' : "Type of Graph",
+            'contents' : ["Position Changed during a Race","Gear Shifts on Track","Team Pace Comparison","Tyre Strategies During a Race"]
+        },
         {
             'title' : "Grand Prix",
             'contents' : f1_data.get_events()
-        },
-        {
-            'title' : "Year",
-            'contents' : ["2024","2023","2022"]
         }
+       
     ]
 
 def practiseResults():

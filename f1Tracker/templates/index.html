@@ -9,6 +9,29 @@
     <title>F1 Tracker</title>
     <link rel="icon" type="image/x-icon" href="https://d3faj0w6aqatyx.cloudfront.net/uploads/2018/01/19151152/FORMULA-1%C2%AE-UNLEASHES-NEW-BRAND-IDENTITY-INSPIRED-BY-ITS-FANS-OPTION-2.jpg">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+      let selectedGraphType = '';
+      let selectedGrandPrix = '';
+  
+      function setGraphType(graphType) {
+          selectedGraphType = graphType;
+          updateGraph();
+      }
+  
+      function setGrandPrix(grandPrix) {
+          selectedGrandPrix = grandPrix;
+          updateGraph();
+      }
+  
+      function updateGraph() {
+          if (selectedGraphType && selectedGrandPrix) {
+              const imageUrl = `/generate-graph?graphType=${encodeURIComponent(selectedGraphType)}&grandPrix=${encodeURIComponent(selectedGrandPrix)}`;
+              document.getElementById('graphImage').src = imageUrl;
+          }
+      }
+  </script>
+  
   </head>
 
   <head><script src="../static/assets/js/color-modes.js"></script>
@@ -314,28 +337,40 @@
 
 <div class="container-fluid">
   <div class="row mb-3">
-        <div class="col-md-6 themed-grid-col">Graph
-          <div class="graph-container text-center">
-            <img id="graphImage" src="" alt="Graph will appear here" class="img-fluid" style="max-width: 100%; height: auto;">
-          </div>
-          </div>
+    <div class="col-md-6 themed-grid-col">Graph
+      <div class="graph-container text-center">
+        <img id="graphImage" src="" alt="Graph will appear here" class="img-fluid" style="max-width: 100%; height: auto;">
+      </div>
+    </div>
 
-          <div class="col-md-6 themed-grid-col">Dropdowns
-            {% for dropdown in data.dropdowns %}
-            <div class="dropdown">
-              <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Select {{dropdown.title}}
-              </button>
-              
-              <ul class="dropdown-menu">
-                {% for content in dropdown.contents %}
-                <li><a class="dropdown-item" href="#">{{ content }}</a></li>
-                {% endfor %}
-              </ul>
-            </div>
-            {% endfor %}
-          </div>
+    <div class="col-md-6 themed-grid-col">Dropdowns
+      <!-- Dropdown for Graph Type -->
+      <div class="dropdown">
+        <button class="btn btn-secondary dropdown-toggle" type="button" id="graphTypeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          Select Graph Type
+        </button>
+        <ul class="dropdown-menu" id="graphTypeMenu">
+          {% for content in data.dropdowns[0].contents %}
+          <li><a class="dropdown-item" href="#" onclick="setGraphType('{{ content }}')">{{ content }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- Dropdown for Grand Prix -->
+      <div class="dropdown">
+        <button class="btn btn-secondary dropdown-toggle" type="button" id="grandPrixDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          Select Grand Prix
+        </button>
+        <ul class="dropdown-menu" id="grandPrixMenu">
+          {% for content in data.dropdowns[1].contents %}
+          <li><a class="dropdown-item" href="#" onclick="setGrandPrix('{{ content }}')">{{ content }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
   </div>
+</div>
+
 
 <!-- Third Section -->
 
