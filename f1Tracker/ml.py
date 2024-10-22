@@ -4,6 +4,7 @@ import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 from scipy.stats import pearsonr
 from matplotlib import pyplot
 import xgboost as xgb
+from loguru import logger
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import accuracy_score, classification_report
@@ -14,18 +15,33 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
-
 import warnings
-warnings.filterwarnings('ignore')
+import requests, zipfile, io
+
+
 
 # Input data files are available in the read-only "../input/" directory
 # For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory      
+zip_file_url = "https://ergast.com/downloads/f1db_csv.zip"
+logger.info(f'Getting {zip_file_url}')
+r = requests.get(zip_file_url)
+zip_file = zipfile.ZipFile(io.BytesIO(r.content))
+dfs = {text_file.filename: pd.read_csv(zip_file.open(text_file.filename))
+       for text_file in zip_file.infolist()
+       if text_file.filename.endswith('.csv')}
+logger.info(f'Found {dfs.keys()}')
+warnings.filterwarnings('ignore')    
+
+# df_drivers = pd.read_csv("/Users/willcrook/repo/f1-tracker/f1db_csv/drivers.csv")
+# df_races = pd.read_csv("//Users/willcrook/repo/f1-tracker/f1db_csv/races.csv")
+# df_results = pd.read_csv("/Users/willcrook/repo/f1-tracker/f1db_csv/results.csv")    
+# df_qualifying = pd.read_csv("/Users/willcrook/repo/f1-tracker/f1db_csv/qualifying.csv")
     
-df_drivers = pd.read_csv("/Users/willcrook/repo/f1-tracker/f1db_csv/drivers.csv")
-df_races = pd.read_csv("//Users/willcrook/repo/f1-tracker/f1db_csv/races.csv")
-df_results = pd.read_csv("/Users/willcrook/repo/f1-tracker/f1db_csv/results.csv")    
-df_qualifying = pd.read_csv("/Users/willcrook/repo/f1-tracker/f1db_csv/qualifying.csv")
-        
+df_drivers = dfs["drivers.csv"]
+df_races = dfs["races.csv"]
+df_results = dfs["results.csv"]
+df_qualifying = dfs["qualifying.csv"]
+
 #ADD: Date to df_results
 
 df_new = df_races.loc[:, ['raceId', 'date']].drop_duplicates(subset=['raceId'])
@@ -124,7 +140,7 @@ years = df_races.loc[:,['year', 'raceId']].set_index('raceId')
 
 df_qualifying = df_qualifying.set_index('raceId').join(years, on='raceId').reset_index()
 
-print("First quali info: ", df_qualifying['year'].min())
+# print("First quali info: ", df_qualifying['year'].min())
 
 #Only include qualifying from the hybrid era
 
@@ -152,7 +168,7 @@ df_results = df_results[df_results['raceId'].isin(y)]
 
 x = df_results['raceId'].unique()
 
-print(np.where(np.isin(x, y) == False))
+# print(np.where(np.isin(x, y) == False))
 
 #MERGE: joining df_qualifying, df_results into one DF
 
@@ -170,7 +186,7 @@ df = df.merge(df_drivers.loc[:,['driverId', 'nationality']],how='left', on='driv
 
 #EVAL: null/nan values in nationality column
 
-print(df[df['nationality'].isna()])
+#print(df[df['nationality'].isna()])
 
 df.head(10)
 
@@ -178,17 +194,17 @@ df.head(10)
 
 df = df.replace('\\N', np.nan)
 
-print("No lap time in q1 set: ", df['q1'].isnull().values.sum())
+# print("No lap time in q1 set: ", df['q1'].isnull().values.sum())
 
 df = df[df['q1'].notnull()]
 
-print("No lap time in q1 set (after removing): ", df['q1'].isnull().values.sum())
+# print("No lap time in q1 set (after removing): ", df['q1'].isnull().values.sum())
 
 #PROBLEM: If a driver doesn't advance to the next round of quali, they don't set a lap time
 
 df = df.fillna(0)
 
-print("Null values in dataframe: ",df.isnull().values.any())
+# print("Null values in dataframe: ",df.isnull().values.any())
 
 #PROBLEM: splitting lap time strings into format [min, sec, msec]
 
@@ -205,7 +221,7 @@ df['q2_lst'] = get_time_lst(df, 'q2')
 df['q3_lst'] = get_time_lst(df, 'q3')
 
 
-print("Null values in dataframe: ",df.isnull().values.any())
+# print("Null values in dataframe: ",df.isnull().values.any())
 
 def convert_to_msec(time_lst):
     
@@ -220,7 +236,7 @@ df['q2Msec'] = df.apply(lambda x: convert_to_msec(x['q2_lst']), axis=1)
 df['q3Msec'] = df.apply(lambda x: convert_to_msec(x['q3_lst']), axis=1)
 
 
-print("Null values in dataframe (added q_Msec): ",df.isnull().values.any())
+# print("Null values in dataframe (added q_Msec): ",df.isnull().values.any())
 
 
 #df = df.loc[:,['raceId', 'qualifyId', 'driverId', 'position', 'year', 'q1Msec', 'q2Msec', 'q3Msec']]
@@ -229,13 +245,13 @@ print("Null values in dataframe (added q_Msec): ",df.isnull().values.any())
 
 df['maxPace'] = df.loc[:, ['q1Msec', 'q2Msec', 'q3Msec']].max(axis=1)
 
-print("Null values in dataframe (added maxPace): ",df.isnull().values.any())
+# print("Null values in dataframe (added maxPace): ",df.isnull().values.any())
 
 #ADD: Mean Pace per session
 
 df['meanPace'] = df.loc[:, ['q1Msec', 'q2Msec', 'q3Msec']].sum(axis=1) / (df.loc[:, ['q1Msec', 'q2Msec', 'q3Msec']] != 0).sum(axis=1)
 
-print("Null values in dataframe (added meanPace): ",df.isnull().values.any())
+# print("Null values in dataframe (added meanPace): ",df.isnull().values.any())
 
 df = df.drop(['q1_lst', 'q2_lst', 'q3_lst', 'q1', 'q2', 'q3'], axis = 1)
 
@@ -247,33 +263,6 @@ df['driverExpYears'] = df['year'] - df['yearStarted']
 
 df[df['driverId'] == 9]
 
-def XGBoost_model(X, Y, test_size=0.2, cv=10):
-    # Split the dataset into training and testing sets
-    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=test_size, random_state=42)
-
-    # Initialize the XGBoost model
-    model = xgb.XGBClassifier(objective="multi:softmax", num_class=len(set(Y)), random_state=42)
-
-    # Cross-validation to evaluate model performance
-    cv_scores = cross_val_score(model, X, Y, cv=cv, scoring='accuracy')
-    print("Cross-Validation Scores:", cv_scores)
-    print("Mean Accuracy:", np.mean(cv_scores))
-
-    # Fit the model on the training set
-    model.fit(X_train, Y_train)
-
-    # Predict on the test set
-    predictions = model.predict(X_test)
-
-    # Print accuracy and classification report
-    accuracy = accuracy_score(Y_test, predictions)
-    print(f'Test Accuracy: {accuracy:.4f}')
-    print("Classification Report:")
-    print(classification_report(Y_test, predictions))
-
-    # Return the model and predictions
-    return model, predictions
-
 def XGBoost_model_train(X, Y, test_size=0.2, cv=10):
     # Split the dataset into training and testing sets
     # X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=test_size, random_state=42)
@@ -283,28 +272,14 @@ def XGBoost_model_train(X, Y, test_size=0.2, cv=10):
 
     # Cross-validation to evaluate model performance
     cv_scores = cross_val_score(model, X, Y, cv=cv, scoring='accuracy')
-    print("Cross-Validation Scores:", cv_scores)
-    print("Mean Accuracy:", np.mean(cv_scores))
+    # print("Cross-Validation Scores:", cv_scores)
+    logger.debug("Mean Accuracy:", np.mean(cv_scores))
 
     #Fit the model on the training set
     model.fit(X, Y)
+    accuracy = round(np.mean(cv_scores)*100)
 
-    return model
-
-def XGBoost_model_predict(model, X_test):
-
-    # Predict on the test set
-    predictions = model.predict(X_test)
-
-    # Print accuracy and classification report
-    # accuracy = accuracy_score(Y_test, predictions)
-    # print(f'Test Accuracy: {accuracy:.4f}')
-    # print("Classification Report:")
-    # print(classification_report(Y_test, predictions))
-
-    # Return the model and predictions
-    X_test['racePositionPredict'] = predictions
-    return X_test
+    return model, accuracy
 
 def getRacePredictions():
     # Feature set (X) and target (Y)
@@ -313,7 +288,7 @@ def getRacePredictions():
 
     # Call the XGBoost model
     # Assume X and Y_position are already defined
-    model = XGBoost_model_train(X, Y_position)
+    model, accuracy = XGBoost_model_train(X, Y_position)
 
 
     # Next Race Prediction
@@ -321,8 +296,6 @@ def getRacePredictions():
     X_full = df.tail(10)
 
     X_full['predict'] = model.predict(X_test) + 1
-
-    print(X_full)
 
     # Create a dictionary to map driverId to the driver's code (or forename/surname as needed)
     df_drivers['driverCode'] = df_drivers['code']  # Assuming 'code' is something like 'Lec', 'Ver', etc.
@@ -343,27 +316,29 @@ def getRacePredictions():
         driver_id = row['driverId']  # Get the driver ID from the row
         driver_code = driver_id_to_code.get(driver_id, "Unknown Driver")  # Map to driver code
         predicted_position = row['predict']  # Get the predicted position
-        certainty = '0%'  # Placeholder for prediction certainty (can be updated later)
-        
         # Create the dictionary for each driver
         driver_prediction = {
             'driver': driver_code,
-            'predictioncertainty': certainty,
             'rank': str(predicted_position)
         }
         
         # Append to the list
         predictions_output.append(driver_prediction)
     predictions_output.sort(key=sortRank)
+    #Change order so that there isn't duplicates of pecking order
+    n = 1
+    for e in predictions_output:
+        e['rank'] = n
+        n+=1
+
     # Print the list of predictions in order
-    return predictions_output
+    # print(f"The accuracy is: {accuracy}")
+    return predictions_output, accuracy
 
 def sortRank(driver_prediction):
     return int(driver_prediction['rank'])
 
-    # Now 'predictions' contains the predicted race positions for the test set.
-    # print("Predictions:", predictions)
-
-    # df['racePositionPredict'] = predictions
-
-    # print(df.head(10))
+if __name__ == '__main__':
+    logger.info('Starting up...')
+    logger.info(getRacePredictions())
+    logger.info('Shutting down...')

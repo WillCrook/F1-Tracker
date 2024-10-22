@@ -15,6 +15,7 @@ docs/_build
 venv/
 database.db
 f1db_csv
+environmentVariables.env
 
 
 # Include tracked hidden files and directories in search and diff tools

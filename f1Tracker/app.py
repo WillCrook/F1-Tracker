@@ -2,10 +2,27 @@ from flask import Flask, render_template, send_from_directory, session, request,
 from f1Tracker import db
 from f1Tracker import f1data
 from werkzeug.security import generate_password_hash, check_password_hash
-from f1Tracker import ml
+# from f1Tracker import ml
 from flask_caching import Cache
+from flask_mail import Mail, Message
+import os
+import secrets
+from dotenv import load_dotenv
 
 app = Flask(__name__)
+
+#Load hidden variables from env file
+load_dotenv("/Users/willcrook/repo/f1-tracker/f1Tracker/environmentVariables.env")
+
+#Setup App Email 
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'  #Set Gmail
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv('GMAIL_USERNAME')  # Stored in environment file
+app.config['MAIL_PASSWORD'] = os.getenv('GMAIL_PASSWORD')  # Stored in environment file
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('GMAIL_USERNAME') # Stored in environment file
+mail = Mail(app)
+
 
 cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})  # Use SimpleCache for in-memory caching
 
@@ -17,6 +34,15 @@ app.secret_key = b'9417b2d7beab235eae274c28716b73e3c06fcb9a898bd4a930301cc4c3a2d
 #     db.close_connection()
 
 signedIn = False
+f1_data = f1data.F1Data()
+
+def send_verification_email(email, token):
+    emailMessage = Message('Your Verification Code', recipients=[email])
+    emailMessage.body = f'Your verification code is: {token}'
+    mail.send(emailMessage)
+
+def generate_token():
+    return secrets.token_hex(3)
 
 def test_request_example(client):
     response = client.get("/posts")
@@ -54,12 +80,33 @@ def login():
         
         session['email'] = request.form['email']
         app.logger.info(f'user {session['email']} logged in')
-        return redirect(url_for('home'))
+
+         # Generate a verification token and send it via email
+        token = generate_token()
+        session['verification_token'] = token
+        session['email'] = request.form['email']  # Store email in session for verification
+        send_verification_email(request.form['email'], token)
+
+        return render_template('twoFA.html')  # Render a page to input verification code
         
     if request.method == 'GET':
         
         return render_template('login.html', incorrectpass=incorrectPass )
-        
+
+@app.route('/verify_login', methods=['POST'])
+def twoFA():
+    if request.method == 'POST':
+        token = request.form['token']
+        if token == session.get('verification_token'):
+            session.pop('verification_token', None)  # Clear the token
+            session['email'] = session.get('email')
+            flash('Login successful!', 'success')
+            return redirect(url_for('home'))
+        else:
+            flash('Invalid verification code. Please try again.')
+
+    return render_template('twoFA.html')
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     try:
@@ -71,6 +118,12 @@ def register():
             team = request.form['team']
             newsletter = request.form.get('newsletter', 0)
 
+            #Check if the email is already in use
+            existing_user = db.query_db('SELECT * FROM users WHERE email = ?', [email])
+            if existing_user:
+                flash('This email is already in use!', 'danger')
+                return render_template('register.html')  # Render the registration template again
+
             values = (email, first_name, password, driver, team, newsletter)
             app.logger.info(f'New user with values: {values}')
 
@@ -78,27 +131,98 @@ def register():
                 'INSERT INTO users (email, firstname, password, driverID, teamID, newsletter, verified) VALUES (?, ?, ?, ?, ?, ?, 0)', values)
             db.get_db().commit()
             session['email'] = request.form['email']
-            return redirect(url_for('home'))
+            # Generate a verification token and send it via email
+            token = generate_token()
+            session['verification_token'] = token
+            session['email'] = email  # Store email in session for verification
+            send_verification_email(email, token)
+
+            return render_template('verify.html')
     except:
         return render_template('register.html')
     
     if request.method == 'GET':
         return render_template('register.html')
 
-@app.route("/settings")
+@app.route('/verify', methods=['POST'])
+def verify():
+    if request.method == 'POST':
+        token = request.form['token']
+        if token == session.get('verification_token'):
+            # Update user's verified status in the database
+            email = session.pop('email', None)
+            db.get_db().execute(
+                'UPDATE users SET verified = 1 WHERE email = ?', [email])
+            db.get_db().commit()
+            flash('Registration successful! You can now log in.', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('Invalid verification code. Please try again.')
+
+    return render_template('verify.html')
+
+@app.route('/settings', methods=['GET', 'POST'])
 def settings():
-    return render_template("settings.html")
+    if request.method == 'POST':
+        # Fetch updated user details from the form
+        email = session.get('email')
+        first_name = request.form['firstName']
+        password = request.form['password']  # You might want to handle password updates differently
+        driver = request.form['driver']
+        team = request.form['team']
+        newsletter = request.form.get('newsletter', 0)
+
+        # Update user details in the database
+        db.get_db().execute(
+            '''UPDATE users SET firstname = ?, driverID = ?, teamID = ?, newsletter = ?
+               WHERE email = ?''',
+            (first_name, driver, team, newsletter, email)
+        )
+        db.get_db().commit()
+        flash('Your settings have been updated!', 'success')
+        return redirect(url_for('settings'))
+
+    if request.method == 'GET':
+        email = session.get('email')
+        # Fetch user details from the database
+        user = db.query_db('SELECT * FROM users WHERE email = ?', [email])
+        if user:
+            user = user[0]  # Get the first (and ideally only) user
+            return render_template('settings.html', user=user)
+
+    return redirect(url_for('login'))  # Redirect to login if user not found
 
 @app.route('/logout')
 def logout():
     # remove the email from the session if it's there
     session.pop('email', None)
+    flash("Succesfully logged out!", 'success')
     return redirect(url_for('home'))
+
+@app.route('/delete_account', methods=['POST'])
+def delete_account():
+    try:
+        email = session.get('email')
+
+        # Delete user from the database
+        db.get_db().execute('DELETE FROM users WHERE email = ?', [email])
+        db.get_db().commit()
+
+        # Log the user out
+        session.pop('email', None)
+
+        flash('Your account has been successfully deleted.', 'info')
+        return redirect(url_for('home'))
+    except Exception as e:
+        app.logger.error(f"Error deleting account: {e}")
+        flash('An error occurred while deleting your account. Please try again.', 'danger')
+        return redirect(url_for('settings'))
  
+
 #Cache used to enhance perfomance of the website
 @cache.cached(timeout=3600, key_prefix='upcoming_grand_prix')
 def getUpcomingGrandPrixInfo():
-    return f1data.getUpcomingGrandPrixInfo()
+    return f1_data.getUpcomingGrandPrixInfo()
 
 def personalisedData():
     return [
@@ -118,24 +242,28 @@ def personalisedData():
     ]
 
 #Cache again used otherwise the processing would be through the roof
+
 @cache.cached(timeout=3600, key_prefix='driver_rankings_quali')
 def driverRankingsRace():
-    return ml.getRacePredictions()
+    #rankings, accuracy = ml.getRacePredictions()
+    return [{"rank": 1,
+           "driver":"Charles Leclerc"},100]
+    #return [rankings, accuracy]
         
 
-def driverRankingsQuali():
+def qualiResults():
     return [
-        {
-        'driver': 'Lec',
-        'predictioncertainty': '0%',
-        'rank': '1',
-    }]
+        "Top Speed: Charles Leclerc"
+    ]
+
+def displayGraph():
+    pass
 
 def dropDowns():
     return [
         {
-            'title' : "Driver",
-            'contents' : ["Lec", 'Norris']
+            'title' : "Grand Prix",
+            'contents' : f1_data.get_events()
         },
         {
             'title' : "Year",
@@ -151,8 +279,7 @@ def practiseResults():
         "Fastest Sector 2: Charles Leclerc - 27.010",
         "Fastest Sector 3: Charles Leclerc - 26.080"
     ]
-def predictionAccuracy():
-    return "0%"
+
 
 def getSignedIn():
     try:
@@ -165,13 +292,15 @@ def getSignedIn():
 def home():
     payload = {
         'highlights' : personalisedData(), # db
-        'driverrankingsquali': driverRankingsQuali(), # db / ML
-        'driverrankingsrace': driverRankingsRace(), # db / ML
+        'qualiresults': qualiResults(), # db / ML
+        'driverrankingsrace': driverRankingsRace()[0], # db / ML
         'upcominggrandprixlist': getUpcomingGrandPrixInfo(), # api 
         'practiseresults' : practiseResults(), # api
-        'predictionaccuracy' : predictionAccuracy(), # api
-        'signedin' : getSignedIn()
+        'predictionaccuracy' : str(driverRankingsRace()[1]) + "%", # ML note that prediction accuracy is dRR[1] 
+        'signedin' : getSignedIn(),
+        'dropdowns' : dropDowns()
         }
+    print(driverRankingsRace()[1])
     return render_template('index.html', data=payload)
 
 @app.route('/static/<path:path>')
