@@ -7,9 +7,13 @@ from matplotlib.figure import Figure
 from io import BytesIO
 import base64
 import fastf1.plotting
+import pandas as pd
+from timple.timedelta import strftimedelta
+from fastf1.core import Laps
+import matplotlib
+matplotlib.use('Agg')
 
 class F1Data:
-
     def __init__(self):
         try:
             self.year = 2024
@@ -19,9 +23,11 @@ class F1Data:
 
             self.events = eventSchedule.to_dict()['EventName']
             self.previous_round_number = self.upcoming_event['RoundNumber'] - 1
+            
         except Exception as e:
             logger.error(f"Error retrieving F1 data: {e}")
             return ["Unable to retrieve F1 Data", "Error"]
+        
     
     def get_events(self):
         event = [event for round, event in self.events.items() if 0 < round <= self.previous_round_number]
@@ -29,6 +35,7 @@ class F1Data:
         return event
 
     def get_positions_change_during_a_race(self, grand_prix):
+        
         # Load the session for the current round
         session = fastf1.get_session(self.year, grand_prix, 'R')
         session.load(telemetry=False, weather=False)
@@ -57,7 +64,57 @@ class F1Data:
         buf = BytesIO()
         fig.savefig(buf, format="png")
         buf.seek(0)
+        plt.close(fig)
+        return buf
+    
+    def get_quali_results_overview(self, grand_prix):
+        fastf1.plotting.setup_mpl(mpl_timedelta_support=True, misc_mpl_mods=False,
+                          color_scheme=None)
+        
+        session = fastf1.get_session(self.year, grand_prix, 'Q')
+        session.load()
+        drivers = pd.unique(session.laps['Driver'])
+        logger.debug(drivers)
 
+        list_fastest_laps = list()
+        for drv in drivers:
+            drvs_fastest_lap = session.laps.pick_driver(drv).pick_fastest()
+            list_fastest_laps.append(drvs_fastest_lap)
+
+        fastest_laps = Laps(list_fastest_laps) \
+            .sort_values(by='LapTime') \
+            .reset_index(drop=True)
+        pole_lap = fastest_laps.pick_fastest()
+        fastest_laps['LapTimeDelta'] = fastest_laps['LapTime'] - pole_lap['LapTime']
+        logger.debug(fastest_laps[['Driver', 'LapTime', 'LapTimeDelta']])
+
+        team_colors = list()
+        for index, lap in fastest_laps.iterlaps():
+            color = fastf1.plotting.get_team_color(lap['Team'], session=session)
+            team_colors.append(color)
+
+        fig, ax = plt.subplots()
+        ax.barh(fastest_laps.index, fastest_laps['LapTimeDelta'],
+                color=team_colors, edgecolor='grey')
+        ax.set_yticks(fastest_laps.index)
+        ax.set_yticklabels(fastest_laps['Driver'])
+
+        # show fastest at the top
+        ax.invert_yaxis()
+
+        # draw vertical lines behind the bars
+        ax.set_axisbelow(True)
+        ax.xaxis.grid(True, which='major', linestyle='--', color='black', zorder=-1000)
+
+        lap_time_string = strftimedelta(pole_lap['LapTime'], '%m:%s.%ms')
+
+        plt.suptitle(f"{session.event['EventName']} {session.event.year} Qualifying\n"
+                    f"Fastest Lap: {lap_time_string} ({pole_lap['Driver']})")
+
+        buf = BytesIO()
+        fig.savefig(buf, format="png")
+        buf.seek(0)
+        plt.close(fig)
         return buf
 
     def get_upcoming_grand_prix_info(self):

@@ -11,27 +11,89 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-      let selectedGraphType = '';
-      let selectedGrandPrix = '';
-  
-      function setGraphType(graphType) {
-          selectedGraphType = graphType;
-          updateGraph();
+      // Function to update the button text based on the selected dropdown item
+      function updateDropdownText(buttonId, selectedItem) {
+        const button = document.getElementById(buttonId);
+        button.textContent = selectedItem;  // Update the button text
       }
-  
-      function setGrandPrix(grandPrix) {
-          selectedGrandPrix = grandPrix;
-          updateGraph();
+    
+      // Function to trigger graph generation based on the selected dropdown values
+      function generateGraph() {
+        // Get the selected graph type and Grand Prix
+        const graphType = document.getElementById('graphTypeButton').textContent;
+        const grandPrix = document.getElementById('grandPrixButton').textContent;
+    
+        // Ensure valid selections (you can customize this check based on default button text)
+        if (graphType === 'Select Graph Type' || grandPrix === 'Select Grand Prix') {
+          alert('Please select both Graph Type and Grand Prix.');
+          return;
+        }
+    
+        // Make an AJAX call to generate the graph (optional: you could also submit via a form)
+        fetch(`/generate-graph?graphType=${encodeURIComponent(graphType)}&grandPrix=${encodeURIComponent(grandPrix)}`)
+          .then(response => response.blob())  // Fetch the image
+          .then(imageBlob => {
+            const imageUrl = URL.createObjectURL(imageBlob);
+            // Set the image URL to display it in the graph container
+            document.getElementById('graphImage').src = imageUrl;
+          })
+          .catch(error => {
+            console.error('Error generating graph:', error);
+          });
       }
+
+      function generateGraph() {
+  // Get selected values
+  const graphType = document.getElementById('graphTypeButton').textContent;
+  const grandPrix = document.getElementById('grandPrixButton').textContent;
+
+  if (graphType === 'Select Graph Type' || grandPrix === 'Select Grand Prix') {
+    alert('Please select both Graph Type and Grand Prix.');
+    return;
+  }
+
+  // Flash message for generating graph
+  const toastMessage = `Generating ${graphType} graph for ${grandPrix} Grand Prix!`;
+  showToast(toastMessage, 'info');
+
+  // Fetch to generate the graph
+  fetch(`/generate-graph?graphType=${encodeURIComponent(graphType)}&grandPrix=${encodeURIComponent(grandPrix)}`)
+    .then(response => response.blob())
+    .then(imageBlob => {
+      const imageUrl = URL.createObjectURL(imageBlob);
+      document.getElementById('graphImage').src = imageUrl;
+      // Optionally flash another message when the graph is loaded
+      showToast('Graph successfully generated!', 'success');
+    })
+    .catch(error => {
+      console.error('Error generating graph:', error);
+      showToast('Error generating the graph. Please try again.', 'danger');
+    });
+}
+
+// Helper function to show toasts
+function showToast(message, category) {
+  const toastContainer = document.getElementById('toastContainer');
+  const toastHTML = `
+    <div class="toast align-items-center text-white bg-${category} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
+      <div class="d-flex">
+        <div class="toast-body">
+          ${message}
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>`;
   
-      function updateGraph() {
-          if (selectedGraphType && selectedGrandPrix) {
-              const imageUrl = `/generate-graph?graphType=${encodeURIComponent(selectedGraphType)}&grandPrix=${encodeURIComponent(selectedGrandPrix)}`;
-              document.getElementById('graphImage').src = imageUrl;
-          }
-      }
-  </script>
+  toastContainer.innerHTML = toastHTML;
   
+  var toastEl = document.querySelector('.toast');
+  var toast = new bootstrap.Toast(toastEl);
+  toast.show();
+}
+
+    </script>
+
+
   </head>
 
   <head><script src="../static/assets/js/color-modes.js"></script>
@@ -212,7 +274,7 @@
     {% with messages = get_flashed_messages(with_categories=True) %}
         {% if messages %}
             {% for category, message in messages %}
-            <div class="toast align-items-center text-white bg-{{ category }} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
+            <div class="toast align-items-center text-white bg-{{ category }} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true">
                 <div class="d-flex">
                     <div class="toast-body">
                         {{ message }}
@@ -337,37 +399,42 @@
 
 <div class="container-fluid">
   <div class="row mb-3">
-    <div class="col-md-6 themed-grid-col">Graph
-      <div class="graph-container text-center">
-        <img id="graphImage" src="" alt="Graph will appear here" class="img-fluid" style="max-width: 100%; height: auto;">
-      </div>
-    </div>
-
-    <div class="col-md-6 themed-grid-col">Dropdowns
-      <!-- Dropdown for Graph Type -->
-      <div class="dropdown">
-        <button class="btn btn-secondary dropdown-toggle" type="button" id="graphTypeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-          Select Graph Type
-        </button>
-        <ul class="dropdown-menu" id="graphTypeMenu">
-          {% for content in data.dropdowns[0].contents %}
-          <li><a class="dropdown-item" href="#" onclick="setGraphType('{{ content }}')">{{ content }}</a></li>
-          {% endfor %}
-        </ul>
+      <div class="col-md-6 themed-grid-col">Graph
+        <div class="graph-container text-center">
+          <img id="graphImage" src="../static/assets/images/graph_placeholder.png" alt="Graph will appear here" class="img-fluid" style="max-width: 100%; height: auto;">
+        </div>
       </div>
 
-      <!-- Dropdown for Grand Prix -->
-      <div class="dropdown">
-        <button class="btn btn-secondary dropdown-toggle" type="button" id="grandPrixDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-          Select Grand Prix
-        </button>
-        <ul class="dropdown-menu" id="grandPrixMenu">
-          {% for content in data.dropdowns[1].contents %}
-          <li><a class="dropdown-item" href="#" onclick="setGrandPrix('{{ content }}')">{{ content }}</a></li>
-          {% endfor %}
-        </ul>
+      <div class="col-md-6 themed-grid-col">Dropdowns
+        <!-- Dropdown for Graph Type -->
+        <div class="dropdown mb-3">
+          <button id="graphTypeButton" class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Select Graph Type
+          </button>
+          <ul class="dropdown-menu">
+            {% for graph_type in data.graph_types %}
+              <li><a class="dropdown-item" href="#" onclick="updateDropdownText('graphTypeButton', '{{ graph_type }}')">{{ graph_type }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <!-- Dropdown for Grand Prix -->
+        <div class="dropdown mb-3">
+          <button id="grandPrixButton" class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Select Grand Prix
+          </button>
+          <ul class="dropdown-menu">
+            {% for gp in data.grand_prix_list %}
+              <li><a class="dropdown-item" href="#" onclick="updateDropdownText('grandPrixButton', '{{ gp }}')">{{ gp }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
       </div>
-    </div>
+  </div>
+
+  <!-- A button to trigger the graph generation -->
+  <div class="text-center mt-3">
+    <button id="generateGraphButton" class="btn btn-primary" onclick="generateGraph()">Generate Graph</button>
   </div>
 </div>
 
