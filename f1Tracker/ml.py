@@ -20,8 +20,7 @@ import requests, zipfile, io
 
 
 
-# Input data files are available in the read-only "../input/" directory
-# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory      
+#Grab zip file containing all necessary data from the internet     
 zip_file_url = "https://ergast.com/downloads/f1db_csv.zip"
 logger.info(f'Getting {zip_file_url}')
 r = requests.get(zip_file_url)
@@ -31,11 +30,6 @@ dfs = {text_file.filename: pd.read_csv(zip_file.open(text_file.filename))
        if text_file.filename.endswith('.csv')}
 logger.info(f'Found {dfs.keys()}')
 warnings.filterwarnings('ignore')    
-
-# df_drivers = pd.read_csv("/Users/willcrook/repo/f1-tracker/f1db_csv/drivers.csv")
-# df_races = pd.read_csv("//Users/willcrook/repo/f1-tracker/f1db_csv/races.csv")
-# df_results = pd.read_csv("/Users/willcrook/repo/f1-tracker/f1db_csv/results.csv")    
-# df_qualifying = pd.read_csv("/Users/willcrook/repo/f1-tracker/f1db_csv/qualifying.csv")
     
 df_drivers = dfs["drivers.csv"]
 df_races = dfs["races.csv"]

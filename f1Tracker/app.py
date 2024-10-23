@@ -2,7 +2,7 @@ from flask import Flask, render_template, send_from_directory, session, request,
 from f1Tracker import db
 from f1Tracker import f1data
 from werkzeug.security import generate_password_hash, check_password_hash
-# from f1Tracker import ml
+from f1Tracker import ml
 from flask_caching import Cache
 from flask_mail import Mail, Message
 import os
@@ -168,14 +168,14 @@ def settings():
         email = session.get('email')
         first_name = request.form['firstName']
         
-        # Use .get() to avoid KeyError if 'password' field is missing or empty
+        # Get password
         password = request.form.get('password')
         
         driver = request.form['driver']
         team = request.form['team']
         newsletter = request.form.get('newsletter', 0)  # Default to 0 if not selected
 
-        # Prepare the query and data for the update
+        # Check if the password is there if it is not then dont execute
         if password:
             # Update password only if it's provided
             db.get_db().execute(
@@ -184,7 +184,7 @@ def settings():
                 (first_name, password, driver, team, newsletter, email)
             )
         else:
-            # Update other fields, but leave password unchanged
+            #No password so dont update
             db.get_db().execute(
                 '''UPDATE users SET firstName = ?, driverID = ?, teamID = ?, newsletter = ?
                    WHERE email = ?''',
@@ -264,10 +264,10 @@ def personalisedData():
 
 @cache.cached(timeout=3600, key_prefix='driver_rankings_quali')
 def driverRankingsRace():
-    #rankings, accuracy = ml.getRacePredictions()
-    return [{"rank": 1,
-           "driver":"Charles Leclerc"},100]
-    #return [rankings, accuracy]
+    rankings, accuracy = ml.getRacePredictions()
+    # return [{"rank": 1,
+    #        "driver":"Charles Leclerc"},100]
+    return [rankings, accuracy]
         
 
 def qualiResults():
@@ -280,7 +280,7 @@ def generate_graph():
     graph_type = request.args.get('graphType')
     grand_prix = request.args.get('grandPrix')
 
-    #flash message
+    #flash messages now in the html so that they display without refreshing the page and hitting the route
     
 
 
@@ -335,9 +335,55 @@ def getSignedIn():
         return True
     except:
         return False
+    
+def getRecommendations(user_id):
+    
+    # Recommendation 1: Most viewed graphs
+    most_viewed_query = '''
+    SELECT displayTypeID, COUNT(*) AS views 
+    FROM displayData 
+    GROUP BY displayTypeID 
+    ORDER BY views DESC 
+    LIMIT 1;  -- Adjust the LIMIT as needed
+    '''
+    most_viewed = db.get_db().execute(most_viewed_query).fetchone()
+
+    # Recommendation 2: Graph based on user's favorite driver
+    # Assuming `driverID` is stored in the users table and the user has a favorite driver
+    user_favorite_driver_query = '''
+    SELECT displayTypeID 
+    FROM displayData 
+    WHERE driverID = (SELECT driverID FROM users WHERE userID = ?)
+    LIMIT 1;  -- Adjust the LIMIT as needed
+    '''
+    user_favorite_driver = db.get_db().execute(user_favorite_driver_query, (user_id,)).fetchone()
+
+    # Recommendation 3: Example additional recommendation
+    additional_recommendation_query = '''
+    SELECT displayTypeID 
+    FROM displayData 
+    ORDER BY RANDOM() 
+    LIMIT 1;  -- Randomly select another recommendation
+    '''
+    additional_recommendation = db.get_db().execute(additional_recommendation_query).fetchone()
+
+    # Collect recommendations
+    recommendations = {
+        'most_viewed': most_viewed,
+        'user_favorite_driver': user_favorite_driver,
+        'additional': additional_recommendation
+    }
+
+    return recommendations
 
 @app.route('/')
 def home():
+
+    user_id = session.get('user_id')  # Assuming user ID is stored in session after login
+    recommendations = None
+    if user_id:
+        recommendations = getRecommendations(user_id)
+
     payload = {
         'highlights' : personalisedData(), # db
         'qualiresults': qualiResults(), # db / ML
@@ -348,6 +394,8 @@ def home():
         'signedin' : getSignedIn(),
         'graphtypes': getGraphTypes(),
         'grandprixlist': f1_data.get_events(),  # Grand Prix events from f1data.py
+        'graphtypes': getGraphTypes(),
+        'recommendations': recommendations
     }
 
     print(driverRankingsRace()[1])

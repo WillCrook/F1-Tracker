@@ -346,45 +346,29 @@ function showToast(message, category) {
 
 <!-- First Section-->
 
-<div class="container-fluid">
-  <div class="row mb-3">
-      <div class="col-md-4 themed-grid-col">
-          <div class="card mb-3" style="width: 100%;">
-              <img src="..." class="card-img-top" alt="...">
-              <div class="card-body">
-                  <h5 class="card-title">{{ data.highlights[0].dataTitle }}</h5>
-                  <p class="card-text">{{ data.highlights[0].driver }}</p>
-                  <a href="#" class="btn btn-primary">Lights out and away we go!</a>
-              </div>
+<div id="recommendations">
+  <h2>Recommended Graphs</h2>
+  <div class="carousel">
+      {% if recommendations %}
+          <div class="carousel-item">
+              <h3>Most Viewed: {{ recommendations.most_viewed.displayTypeID }}</h3>
+              <!-- You can replace this with the actual graph or a link to the graph -->
           </div>
-      </div>
-
-      <div class="col-md-4 themed-grid-col">
-          <div class="card mb-3" style="width: 100%;">
-              <img src="..." class="card-img-top" alt="...">
-              <div class="card-body">
-                  <h5 class="card-title">{{ data.highlights[1].dataTitle }}</h5>
-                  <p class="card-text">{{ data.highlights[1].driver }}</p>
-                  <a href="#" class="btn btn-primary">Lights out and away we go!</a>
-              </div>
+          <div class="carousel-item">
+              <h3>Your Favorite Driver: {{ recommendations.user_favorite_driver.displayTypeID }}</h3>
           </div>
-      </div>
-
-      <div class="col-md-4 themed-grid-col">
-          <div class="card mb-3" style="width: 100%;">
-              <img src="..." class="card-img-top" alt="...">
-              <div class="card-body">
-                  <h5 class="card-title">{{ data.highlights[2].dataTitle }}</h5>
-                  <p class="card-text">{{ data.highlights[2].driver }}</p>
-                  <a href="#" class="btn btn-primary">Lights out and away we go!</a>
-              </div>
+          <div class="carousel-item">
+              <h3>Another Recommendation: {{ recommendations.additional.displayTypeID }}</h3>
           </div>
-      </div>
+      {% else %}
+          <p>No recommendations available at this time.</p>
+      {% endif %}
   </div>
+</div>
 
   <div class="row">
       <div class="col-md-12 themed-grid-col">
-          <h5>Upcoming Grand Prix</h5>
+          <h2>Upcoming Grand Prix</h2>
           <ul class="list-group">
               {% for item in data.upcominggrandprixlist %}
               <li class="list-group-item">{{ item }}</li>
