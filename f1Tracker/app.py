@@ -255,14 +255,14 @@ def qualiResults():
     return [
         "Top Speed: Charles Leclerc"
     ]
-
+@cache.cached(timeout=3600, key_prefix='generate_graph')
 @app.route('/generate-graph', methods=['GET'])
 def generate_graph():
     graph_type = request.args.get('graphType')
     grand_prix = request.args.get('grandPrix')
 
     #flash message
-    flash(f'Generating graph for "{graph_type}" at "{grand_prix}". Please wait...', 'info')
+    
 
 
     # Based on the selected graph type and Grand Prix, generate the appropriate graph
@@ -274,13 +274,32 @@ def generate_graph():
 
     elif graph_type == "Gear Shifts on Track":
         image_data = f1_data.get_gear_shifts(grand_prix)
+    
+    elif graph_type == "Team Pace Comparison":
+        image_data = f1_data.get_team_pace_comparison(grand_prix)
+
+    elif graph_type == "Driver Laptime Comparison":
+        image_data = f1_data.get_driver_laptime_comparison(grand_prix)
+    
+    elif graph_type == "Tyre Strategies During a Race":
+        image_data = f1_data.get_tyre_strategies(grand_prix)
+
     # Add more conditions for other graph types
     else:
         return "Graph type not supported", 400
 
     # Serve the image data (this should be returned as a file object)
-    flash(f"Succesfully generated {graph_type} graph!", "success")
     return send_file(image_data, mimetype='image/png')
+
+def getGraphTypes():
+    return [
+        "Position Changed during a Race", 
+            "Qualifying Results Overview" , 
+            "Team Pace Comparison", 
+            "Driver Laptime Comparison",
+            "Gear Shifts on Track",  
+            "Tyre Strategies During a Race"
+            ]
 
 def practiseResults():
     return [
@@ -290,7 +309,6 @@ def practiseResults():
         "Fastest Sector 2: Charles Leclerc - 27.010",
         "Fastest Sector 3: Charles Leclerc - 26.080"
     ]
-
 
 def getSignedIn():
     try:
@@ -309,8 +327,8 @@ def home():
         'practiseresults' : practiseResults(), # api
         'predictionaccuracy' : str(driverRankingsRace()[1]) + "%", # ML note that prediction accuracy is dRR[1] 
         'signedin' : getSignedIn(),
-        'graph_types': ["Position Changed during a Race", "Qualifying Results Overview" , "Gear Shifts on Track", "Team Pace Comparison", "Tyre Strategies During a Race"],
-        'grand_prix_list': f1_data.get_events(),  # Grand Prix events from f1data.py
+        'graphtypes': getGraphTypes(),
+        'grandprixlist': f1_data.get_events(),  # Grand Prix events from f1data.py
     }
 
     print(driverRankingsRace()[1])

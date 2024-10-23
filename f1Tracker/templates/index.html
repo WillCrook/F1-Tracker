@@ -53,7 +53,7 @@
   }
 
   // Flash message for generating graph
-  const toastMessage = `Generating ${graphType} graph for ${grandPrix} Grand Prix!`;
+  const toastMessage = `Generating ${graphType} graph for ${grandPrix}!`;
   showToast(toastMessage, 'info');
 
   // Fetch to generate the graph
@@ -396,24 +396,23 @@ function showToast(message, category) {
 
   
 <!-- Second Section -->
-
 <div class="container-fluid">
   <div class="row mb-3">
-      <div class="col-md-6 themed-grid-col">Graph
+      <div class="col-md-8 themed-grid-col">Graph
         <div class="graph-container text-center">
           <img id="graphImage" src="../static/assets/images/graph_placeholder.png" alt="Graph will appear here" class="img-fluid" style="max-width: 100%; height: auto;">
         </div>
       </div>
 
-      <div class="col-md-6 themed-grid-col">Dropdowns
+      <div class="col-md-4 themed-grid-col">Dropdowns
         <!-- Dropdown for Graph Type -->
         <div class="dropdown mb-3">
           <button id="graphTypeButton" class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
             Select Graph Type
           </button>
           <ul class="dropdown-menu">
-            {% for graph_type in data.graph_types %}
-              <li><a class="dropdown-item" href="#" onclick="updateDropdownText('graphTypeButton', '{{ graph_type }}')">{{ graph_type }}</a></li>
+            {% for graphtype in data.graphtypes %}
+              <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); updateDropdownText('graphTypeButton', '{{ graphtype }}')">{{ graphtype }}</a></li>
             {% endfor %}
           </ul>
         </div>
@@ -424,17 +423,17 @@ function showToast(message, category) {
             Select Grand Prix
           </button>
           <ul class="dropdown-menu">
-            {% for gp in data.grand_prix_list %}
-              <li><a class="dropdown-item" href="#" onclick="updateDropdownText('grandPrixButton', '{{ gp }}')">{{ gp }}</a></li>
+            {% for gp in data.grandprixlist %}
+              <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); updateDropdownText('grandPrixButton', '{{ gp }}')">{{ gp }}</a></li>
             {% endfor %}
           </ul>
         </div>
-      </div>
-  </div>
 
-  <!-- A button to trigger the graph generation -->
-  <div class="text-center mt-3">
-    <button id="generateGraphButton" class="btn btn-primary" onclick="generateGraph()">Generate Graph</button>
+        <!-- Generate Graph Button placed here -->
+        <div class="mb-3">
+          <button id="generateGraphButton" class="btn btn-primary" onclick="generateGraph()">Generate Graph</button>
+        </div>
+      </div>
   </div>
 </div>
 
