@@ -167,17 +167,30 @@ def settings():
         # Fetch updated user details from the form
         email = session.get('email')
         first_name = request.form['firstName']
-        password = request.form['password']  # You might want to handle password updates differently
+        
+        # Use .get() to avoid KeyError if 'password' field is missing or empty
+        password = request.form.get('password')
+        
         driver = request.form['driver']
         team = request.form['team']
-        newsletter = request.form.get('newsletter', 0)
+        newsletter = request.form.get('newsletter', 0)  # Default to 0 if not selected
 
-        # Update user details in the database
-        db.get_db().execute(
-            '''UPDATE users SET firstname = ?, driverID = ?, teamID = ?, newsletter = ?
-               WHERE email = ?''',
-            (first_name, driver, team, newsletter, email)
-        )
+        # Prepare the query and data for the update
+        if password:
+            # Update password only if it's provided
+            db.get_db().execute(
+                '''UPDATE users SET firstName = ?, password = ?, driverID = ?, teamID = ?, newsletter = ?
+                   WHERE email = ?''',
+                (first_name, password, driver, team, newsletter, email)
+            )
+        else:
+            # Update other fields, but leave password unchanged
+            db.get_db().execute(
+                '''UPDATE users SET firstName = ?, driverID = ?, teamID = ?, newsletter = ?
+                   WHERE email = ?''',
+                (first_name, driver, team, newsletter, email)
+            )
+
         db.get_db().commit()
         flash('Your settings have been updated!', 'success')
         return redirect(url_for('settings'))
@@ -188,9 +201,15 @@ def settings():
         user = db.query_db('SELECT * FROM users WHERE email = ?', [email])
         if user:
             user = user[0]  # Get the first (and ideally only) user
-            return render_template('settings.html', user=user)
+            # Fetch all drivers and teams to display on the settings page
+            teams = db.query_db('SELECT * FROM teams')
+            drivers = db.query_db('SELECT * FROM drivers')
+            
+
+            return render_template('settings.html', user=user, teams=teams, drivers=drivers)
 
     return redirect(url_for('login'))  # Redirect to login if user not found
+
 
 @app.route('/logout')
 def logout():

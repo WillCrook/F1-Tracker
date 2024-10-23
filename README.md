@@ -9,7 +9,12 @@ python3 -m pip install -r requirements.txt
 python -c 'import secrets; print(secrets.token_hex())'
 
 ```
+### Setup environment variables
+```
+create.env file 
+add variables required into that and save
 
+```
 ## Git commit
 ```
 git status

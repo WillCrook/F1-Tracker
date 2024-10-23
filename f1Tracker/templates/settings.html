@@ -10,6 +10,7 @@
     <div class="container">
         <h1 class="mb-4">Settings</h1>
 
+        <!-- Flash messages for feedback -->
         {% with messages = get_flashed_messages(with_categories=True) %}
             {% if messages %}
                 <div class="alert alert-success" role="alert">
@@ -18,10 +19,11 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Settings form -->
         <form method="POST">
             <div class="mb-3">
                 <label for="firstName" class="form-label">First Name</label>
-                <input type="text" class="form-control" id="firstName" name="firstName" value="{{ user.firstname }}" required>
+                <input type="text" class="form-control" id="firstName" name="firstName" value="{{ user.firstName }}" required>
             </div>
 
             <div class="mb-3">
@@ -30,13 +32,32 @@
             </div>
 
             <div class="mb-3">
-                <label for="driver" class="form-label">Driver</label>
-                <input type="text" class="form-control" id="driver" name="driver" value="{{ user.driverID }}" required>
+                <label for="password" class="form-label">Password (Leave blank to keep unchanged)</label>
+                <input type="password" class="form-control" id="password" name="password">
             </div>
 
             <div class="mb-3">
-                <label for="team" class="form-label">Team</label>
-                <input type="text" class="form-control" id="team" name="team" value="{{ user.teamID }}" required>
+                <label for="driver" class="form-label">Favourite Driver</label>
+                <select class="form-select" id="driver" name="driver" required>
+                    <option value="" disabled>Select your favourite driver</option>
+                    {% for driver in drivers %}
+                        <option value="{{ driver.driverID }}" {% if driver.driverID == user.driverID %}selected{% endif %}>
+                            {{ driver.driverName }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="team" class="form-label">Favourite Team</label>
+                <select class="form-select" id="team" name="team" required>
+                    <option value="" disabled>Select your favourite team</option>
+                    {% for team in teams %}
+                        <option value="{{ team.teamID }}" {% if team.teamID == user.teamID %}selected{% endif %}>
+                            {{ team.teamName }}
+                        </option>
+                    {% endfor %}
+                </select>
             </div>
 
             <div class="mb-3 form-check">
@@ -73,6 +94,8 @@
             </div>
         </div>
 
+        <!-- Back to Home Button -->
+        <a href="{{ url_for('home') }}" class="btn btn-secondary mt-4">Back to Home</a>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
