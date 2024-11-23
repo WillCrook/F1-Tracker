@@ -16,7 +16,7 @@ import numpy as np
 from matplotlib import colormaps
 from matplotlib.collections import LineCollection
 
-#set matplotlib to non gui to save resources
+# Set matplotlib to non GUI to save resources
 matplotlib.use('Agg')
 
 class F1Data:
@@ -193,9 +193,7 @@ class F1Data:
 
         lap = session.laps.pick_fastest()
         tel = lap.get_telemetry()
-        # sphinx_gallery_defer_figures
-
-        ##############################################################################
+       
         # Prepare the data for plotting by converting it to the appropriate numpy
         # data types
 
@@ -205,7 +203,6 @@ class F1Data:
         points = np.array([x, y]).T.reshape(-1, 1, 2)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
         gear = tel['nGear'].to_numpy().astype(float)
-        # sphinx_gallery_defer_figures
 
         #create figure and axis
         fig, ax = plt.subplots(figsize=(15, 10))
@@ -217,7 +214,6 @@ class F1Data:
         lc_comp = LineCollection(segments, norm=plt.Normalize(1, cmap.N+1), cmap=cmap)
         lc_comp.set_array(gear)
         lc_comp.set_linewidth(4)
-        # sphinx_gallery_defer_figures
 
         # Create the plot
         
@@ -229,8 +225,7 @@ class F1Data:
             f"Fastest Lap Gear Shift Visualization\n"
             f"{lap['Driver']} - {session.event['EventName']} {session.event.year}"
         )
-        # sphinx_gallery_defer_figures
-
+        
         # Add a colorbar to the plot. Shift the colorbar ticks by +0.5 so that they
         # are centered for each color segment.
 
@@ -259,27 +254,24 @@ class F1Data:
         race.load()
 
   
-        # Get all the laps for the point finishers only.
-        # Filter out slow laps (yellow flag, VSC, pitstops etc.)
-        # as they distort the graph axis.
+        # get laps for top 10 (points).
+        # remove slow laps (eg. yellow flag, VSC, SC, pitstops etc.) as they make the graph axis look whack.
         point_finishers = race.drivers[:10]
         print(point_finishers)
         driver_laps = race.laps.pick_drivers(point_finishers).pick_quicklaps()
         driver_laps = driver_laps.reset_index()
 
-        # To plot the drivers by finishing order,
-        # we need to get their three-letter abbreviations in the finishing order.
+        #get driver codes in the finishing order do display them on the graph.
         finishing_order = [race.get_driver(i)["Abbreviation"] for i in point_finishers]
         print(finishing_order)
 
-        # First create the violin plots to show the distributions.
-        # Then use the swarm plot to show the actual laptimes.
+        # violin plots to show the distributions.
+        # then I use swarm plot to show the actual laptimes.
 
         # create the figure
         fig, ax = plt.subplots(figsize=(15, 10))
 
-        # Seaborn doesn't have proper timedelta support,
-        # so we have to convert timedelta to float (in seconds)
+        # convert timedelta to float (in seconds) for seaborn
         driver_laps["LapTime(s)"] = driver_laps["LapTime"].dt.total_seconds()
 
         sns.violinplot(data=driver_laps,
@@ -302,7 +294,7 @@ class F1Data:
                     linewidth=0,
                     size=4,
                     )
-        # sphinx_gallery_defer_figures
+       
 
         
         # Make the plot more aesthetic
@@ -371,9 +363,7 @@ class F1Data:
                 )
 
                 previous_stint_end += row["StintLength"]
-
-        # sphinx_gallery_defer_figures
-
+                
         # Make the plot more readable and intuitive
         plt.title(f"{self.year} {grand_prix} Strategies")
         plt.xlabel("Lap Number")
