@@ -22,23 +22,48 @@ matplotlib.use('Agg')
 class F1Data:
     def __init__(self):
         try:
+            #Set the year 
             self.year = 2024
-            self.upcoming_event = fastf1.get_events_remaining().iloc[0].to_dict()
-            eventSchedule = fastf1.get_event_schedule(self.year)
-            logger.info(f'events: {eventSchedule.to_dict()['EventName']}')
 
-            self.events = eventSchedule.to_dict()['EventName']
-            self.previous_round_number = self.upcoming_event['RoundNumber'] - 1
-            
+            # Get remaining events
+            remaining_events = fastf1.get_events_remaining()
+            if not remaining_events.empty:
+                self.upcoming_event = remaining_events.iloc[0].to_dict()
+            else:
+                self.upcoming_event = None
+                logger.warning("No upcoming events found.")
+
+            # Get event schedule
+            event_schedule = fastf1.get_event_schedule(self.year)
+            if 'EventName' in event_schedule:
+                self.events = event_schedule['EventName'].to_dict()
+                logger.info(f"Events: {self.events}")
+            else:
+                self.events = {}
+                logger.warning("No Events remaining.")
+
+            # Calculate previous round number
+            self.previous_round_number = (self.upcoming_event.get('RoundNumber', 1) - 1)
+
         except Exception as e:
             logger.error(f"Error retrieving F1 data: {e}")
-            return ["Unable to retrieve F1 Data", "Error"]
+            self.upcoming_event = None
+            self.events = {}
+            self.previous_round_number = None
         
-    
     def get_events(self):
-        event = [event for round, event in self.events.items() if 0 < round <= self.previous_round_number]
-        event.reverse()
-        return event
+        if self.previous_round_number == 0:
+            logger.error("Unable to filter events. There are no events")
+            return ["Error retrieving events"]
+
+        try:
+            # Filter and reverse events
+            event = [event for round, event in self.events.items() if 0 < round <= self.previous_round_number]
+            event.reverse()
+            return event
+        except Exception as e:
+            logger.error(f"Error in get_events: {e}")
+            return ["Error retrieving events"]
 
     def get_positions_change_during_a_race(self, grand_prix):
         fastf1.plotting.setup_mpl(mpl_timedelta_support=True, misc_mpl_mods=False,
@@ -386,22 +411,43 @@ class F1Data:
 
 
     def get_upcoming_grand_prix_info(self):
-       
-        upcoming_event = self.upcoming_event
-        up_gp_list = []
-        date = upcoming_event['EventDate']
 
-        # Load previous session info
-        last_circuit_info = fastf1.get_session(date.year - 1, upcoming_event['EventName'], 'R')
-        last_circuit_info.load(laps=True, telemetry=False, weather=False, messages=False)
+        #Upcoming Grand Prix works by always returning the "error retrieving upcoming Grand Prix info"
+        #if there is any issue to the user. I have also implemented logs throughout so that the admin can
+        #can see on there end where the problem actually lies. This would show whether its an API issue or it's just because its the end of the season. 
 
-        # Append last circuit info
-        for element in ["Driver", "LapTime"]:
-            up_gp_list.append(last_circuit_info.laps.pick_fastest().to_dict().get(element, "N/A"))
+        logger.info("Retrieving upcoming Grand Prix info...")
         
-        # Append upcoming event details
-        for element in ['EventName', 'Location', 'RoundNumber', 'EventDate']:
-            up_gp_list.append(f'{element}: {upcoming_event[element]}')
+        #Check to see if there is an upcoming Grand Prix
+        if not self.upcoming_event:
+            logger.error("No upcoming event available.")
+            return ["Error retrieving upcoming Grand Prix info"]
 
-        return up_gp_list 
+        try:
+            upcoming_event = self.upcoming_event
+            date = upcoming_event.get('EventDate')
+
+            if not date:
+                logger.error("Missing 'EventDate' in upcoming event.")
+                return ["Error retrieving upcoming Grand Prix info"]
+
+            # Load previous session info
+            try:
+                last_circuit_info = fastf1.get_session(date.year - 1, upcoming_event['EventName'], 'R')
+                last_circuit_info.load(laps=True, telemetry=False, weather=False, messages=False)
+
+                
+                fastest_lap = last_circuit_info.laps.pick_fastest().to_dict()
+                logger.info(f"Fastest lap details: Driver={fastest_lap.get('Driver', 'N/A')}, LapTime={fastest_lap.get('LapTime', 'N/A')}")
+            except Exception as e:
+                logger.error(f"Error loading last session info: {e}")
+
+            for element in ['EventName', 'Location', 'RoundNumber', 'EventDate']:
+                logger.info(f"{element}: {upcoming_event.get(element, 'N/A')}")
+
+        except Exception as e:
+            logger.error(f"Error in get_upcoming_grand_prix_info: {e}")
+
+        return ["Error retrieving upcoming Grand Prix info"]
+
         

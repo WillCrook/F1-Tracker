@@ -73,15 +73,15 @@ def login():
 
         user = users[0]
         if not check_password_hash(user['password'], request.form['password']):
-            app.logger.warning(f'user {request.form['email']} used incorrect password {request.form['password']}')
+            app.logger.warning(f"user {request.form['email']} used incorrect password {request.form['password']}")
             flash('Incorrect password')
             incorrectPass = True
-            return render_template('login.html', incorrectpass=incorrectPass )
+            return render_template('login.html', incorrectpass=incorrectPass)
         
         session['email'] = request.form['email']
-        app.logger.info(f'user {session['email']} logged in')
+        app.logger.info(f"user {session['email']} logged in")
 
-         # Generate a verification token and send it via email
+        # Generate a verification token and send it via email
         token = generate_token()
         session['verification_token'] = token
         session['email'] = request.form['email']  # Store email in session for verification
@@ -90,8 +90,8 @@ def login():
         return render_template('twoFA.html')  # Render a page to input verification code
         
     if request.method == 'GET':
-        
-        return render_template('login.html', incorrectpass=incorrectPass )
+        return render_template('login.html', incorrectpass=incorrectPass)
+
 
 @app.route('/verify_login', methods=['POST'])
 def twoFA():
