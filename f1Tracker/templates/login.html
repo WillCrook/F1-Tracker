@@ -70,7 +70,12 @@
             </div>
             {% if incorrectpass %}
             <div class="alert alert-danger" role="alert">
-                Incorrect Password! Please Try Again :/
+                Incorrect Password! Please Try Again.
+            </div>
+            {% endif %}
+            {% if invalidemail %}
+            <div class="alert alert-danger" role="alert">
+                There is no account found with that Email! Please Try Again or Register. 
             </div>
             {% endif %}
             <div class="form-check text-start my-3">

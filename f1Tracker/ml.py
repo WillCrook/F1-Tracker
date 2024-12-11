@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader, TensorDataset
 import warnings
 import requests, zipfile, io
 
-# Grab zip file containing all necessary data from the internet     
+#Grab zip file containing all necessary data from the internet     
 zip_file_url = "https://ergast.com/downloads/f1db_csv.zip"
 logger.info(f'Getting {zip_file_url}')
 r = requests.get(zip_file_url)
@@ -29,7 +29,7 @@ dfs = {text_file.filename: pd.read_csv(zip_file.open(text_file.filename))
 logger.info(f'Found {dfs.keys()}')
 warnings.filterwarnings('ignore')    
 
-# Sort the various csv files downloaded into their respective dataframe
+#Sort the various csv files downloaded into their respective dataframe
 
 df_drivers = dfs["drivers.csv"]
 df_races = dfs["races.csv"]
@@ -39,7 +39,7 @@ df_qualifying = dfs["qualifying.csv"]
 #The next section is just building/formatting the dataframe for the machine learning model
 #I have commented the various actions I am doing to the dataframe to make it clear what data is being used
 
-# Add the date to df_results
+#Add the date to df_results
 
 df_new = df_races.loc[:, ['raceId', 'date']].drop_duplicates(subset=['raceId'])
 
@@ -47,17 +47,17 @@ df_new = df_new.sort_values(by='date', key=lambda x: x.str.split('-'))
 
 df_new['raceIdOrdered'] = range(1,len(df_new)+1)
 
-# Add the correct order of races to df_results
+#Add the correct order of races to df_results
 
 df_results = pd.merge(df_results, df_new.loc[:, ['raceId', 'raceIdOrdered']], how='left', on=['raceId'], )
 
 
-# Fix the dataframe to be in the order of races
+#Fix the dataframe to be in the order of races
 
 df_results = df_results.sort_values(by='raceIdOrdered')
 
 
-# Add the years to dataframe results
+#Add the years to dataframe results
 
 df_results = df_results.set_index('raceId').join(df_races.loc[:,['year', 'raceId']].set_index('raceId'), on='raceId').reset_index()
 
@@ -67,7 +67,7 @@ df_results = df_results.rename(columns={'positionOrder' : 'racePosition', 'grid'
 
 df_results.head(10)
 
-# Add the year in which the different drivers started racing
+#Add the year in which the different drivers started racing
 
 min_year = df_results.groupby('driverId').min()['year']
 
@@ -77,7 +77,7 @@ df_results = df_results.merge(min_year, on='driverId',how='left')
 
 df_results
 
-#add how many races the driver has participated for  
+#Add how many races the driver has participated for  
 
 def count_race_exp(df):
     
@@ -131,23 +131,23 @@ data_for_races['diff'] = data_for_races['Total'] - data_for_races['raceId']
 
 data_for_races[data_for_races['diff'] != 0]
 
-#add the all the years to df_qualifying
+#Add the all the years to df_qualifying
 
 years = df_races.loc[:,['year', 'raceId']].set_index('raceId')
 
 df_qualifying = df_qualifying.set_index('raceId').join(years, on='raceId').reset_index()
 
-#just include the qualifying and races from the hybrid era (2014 onwards)
+#Just include the qualifying and races from the hybrid era (2014 onwards)
 
 df_qualifying = df_qualifying[(df_qualifying['year'] >= 2014)]
 
 df_results = df_results[(df_results['year'] >= 2014)]
 
-#remove the drivers in the table that didn't start a race 
+#Remove the drivers in the table that didn't start a race 
 
 df_results = df_results[df_results['startingPosition'] != 0]
 
-#EVAL: Quali info missing for a race
+#For some races there is missing quali data so in those races I remove the data 
 
 x = df_results['raceId'].unique()
 
@@ -155,15 +155,11 @@ y = df_qualifying['raceId'].unique()
 
 np.where(np.isin(x, y) == False)
 
-#REMOVE: Races for which there is no quali info
-
 df_results = df_results[df_results['raceId'].isin(y)]
 
 x = df_results['raceId'].unique()
 
-# print(np.where(np.isin(x, y) == False))
-
-#MERGE: joining df_qualifying, df_results into one DF
+#Now we can combine the race data and quali data together into one dataframe
 
 df = pd.merge(df_results, df_qualifying,  how='left', left_on=['raceId','driverId'], right_on = ['raceId','driverId'])
 
@@ -171,15 +167,11 @@ df = df.drop(['year_y', 'constructorId', 'qualifyId', 'number'], axis = 1)
 
 df = df.rename(columns={'year_x' : 'year', 'position' : 'qualiResultPosition'})
 
-df.head(10)
-
-#ADD: drivers' nationality
+#Adding the drivers nationality to the dataframe to add another data point for the machine learning model
 
 df = df.merge(df_drivers.loc[:,['driverId', 'nationality']],how='left', on='driverId')
 
-#EVAL: null/nan values in nationality column
-
-#print(df[df['nationality'].isna()])
+#There are instances where the nationality of the driver is unknown
 
 df.head(10)
 

@@ -40,10 +40,14 @@ class F1Data:
                 logger.info(f"Events: {self.events}")
             else:
                 self.events = {}
-                logger.warning("No Events remaining.")
+                logger.warning("Unable to get events.")
 
-            # Calculate previous round number
-            self.previous_round_number = (self.upcoming_event.get('RoundNumber', 1) - 1)
+            #Calculate the previous round number 
+            #if there is no upcoming event then the last event gets picked
+            if self.upcoming_event == None:
+                self.previous_round_number = list(self.events.keys())[-1]
+            else:
+                self.previous_round_number = (self.upcoming_event.get('RoundNumber', 1) - 1)
 
         except Exception as e:
             logger.error(f"Error retrieving F1 data: {e}")

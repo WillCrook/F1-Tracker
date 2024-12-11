@@ -69,25 +69,25 @@ def login():
     if request.method == 'POST':
         users = db.query_db('select * from users where email = ?', [request.form['email']])
         if len(users) == 0:
-            return redirect(url_for('register'))
-
+            invalidEmail = True
+            return render_template('login.html', invalidemail = invalidEmail)
+        
         user = users[0]
         if not check_password_hash(user['password'], request.form['password']):
             app.logger.warning(f"user {request.form['email']} used incorrect password {request.form['password']}")
-            flash('Incorrect password')
             incorrectPass = True
             return render_template('login.html', incorrectpass=incorrectPass)
         
         session['email'] = request.form['email']
         app.logger.info(f"user {session['email']} logged in")
 
-        # Generate a verification token and send it via email
+        #Generate a verification token and send it via email
         token = generate_token()
         session['verification_token'] = token
-        session['email'] = request.form['email']  # Store email in session for verification
+        session['email'] = request.form['email']  #Store email in session for verification
         send_verification_email(request.form['email'], token)
 
-        return render_template('twoFA.html')  # Render a page to input verification code
+        return render_template('twoFA.html')  #Render a page to input verification code
         
     if request.method == 'GET':
         return render_template('login.html', incorrectpass=incorrectPass)
@@ -103,7 +103,7 @@ def twoFA():
             flash('Login successful!', 'success')
             return redirect(url_for('home'))
         else:
-            flash('Invalid verification code. Please try again.')
+            flash('Invalid verification code. Please try again.', 'error')
 
     return render_template('twoFA.html')
 
