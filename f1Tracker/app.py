@@ -149,13 +149,13 @@ def verify():
     if request.method == 'POST':
         token = request.form['token']
         if token == session.get('verification_token'):
-            # Update user's verified status in the database
-            email = session.pop('email', None)
+            #update in the database to show that the user is verified
+            email = session['email']
             db.get_db().execute(
                 'UPDATE users SET verified = 1 WHERE email = ?', [email])
             db.get_db().commit()
             flash('Registration successful! You can now log in.', 'success')
-            return redirect(url_for('login'))
+            return redirect(url_for('home'))
         else:
             flash('Invalid verification code. Please try again.')
 
