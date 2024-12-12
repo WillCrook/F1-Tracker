@@ -69,6 +69,9 @@ class F1Data:
             logger.error(f"Error in get_events: {e}")
             return ["Error retrieving events"]
 
+    def get_last_grand_prix(self):
+        return self.previous_round_number
+
     def get_positions_change_during_a_race(self, grand_prix):
         fastf1.plotting.setup_mpl(mpl_timedelta_support=True, misc_mpl_mods=False,
                           color_scheme='fastf1')

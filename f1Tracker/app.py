@@ -55,7 +55,8 @@ def hello_world():
 @app.route("/db_init")
 def db_init():
     db.init_db_sql_file()
-    return 'OK'
+    app.logger.info("Database Initalised")
+    return 'OK Database Initalised'
 
 """
 LOGIN / LOGOUT
@@ -269,7 +270,6 @@ def driverRankingsRace():
     #        "driver":"Charles Leclerc"},100]
     return [rankings, accuracy]
         
-
 def qualiResults():
     return [
         "Top Speed: Charles Leclerc"
@@ -303,7 +303,6 @@ def generate_graph():
     elif graph_type == "Tyre Strategies During a Race":
         image_data = f1_data.get_tyre_strategies(grand_prix)
 
-    # Add more conditions for other graph types
     else:
         return "Graph type not supported", 400
 
@@ -376,6 +375,78 @@ def getRecommendations(user_id):
 
     return recommendations
 
+@app.route('/testnewsletter')
+def send_newsletter():
+    
+    try:
+        app.logger.info("Attempting to send Newsletter")
+        last_grand_prix = f1_data.get_last_grand_prix()
+        
+        # Initialize the graphs dictionary
+        graphs = {}
+        
+        # Dictionary of graph methods
+        graph_methods = {
+            "positions_change": f1_data.get_positions_change_during_a_race,
+            "quali_results": f1_data.get_quali_results_overview,
+            "team_pace": f1_data.get_team_pace_comparison,
+            "gear_shifts": f1_data.get_gear_shifts,
+            "driver_laptime": f1_data.get_driver_laptime_comparison,
+            "tyre_strategies": f1_data.get_tyre_strategies,
+        }
+
+        # Log the type of return value for each graph
+        for graph_name, method in graph_methods.items():
+            graph_data = method(last_grand_prix)
+            app.logger.info(f"Type of {graph_name}: {type(graph_data)}")  # Log type for debugging
+            if isinstance(graph_data, list):
+                graphs[graph_name] = graph_data[0]  # Take the first element if it's a list
+            else:
+                graphs[graph_name] = graph_data
+
+        # Render the newsletter template
+        html_body = render_template(
+            "newsletter_template.html",
+            upcoming_event=f1_data.get_upcoming_grand_prix_info(),
+            graphs=graphs
+        )
+
+        # Get subscribers from the database
+        subscribers = db.query_db("SELECT email, firstName FROM users WHERE newsletter = 1 AND verified = 1")
+
+        # Send the email to each subscriber
+        for subscriber in subscribers:
+            recipient_email = subscriber['email']
+            first_name = subscriber['firstName']
+
+            # Configure email
+            newsletterEmail = Message(
+                subject="Your F1 Tracker Newsletter",
+                recipients=[recipient_email],
+                html=html_body
+            )
+
+            # Attach graphs (as BytesIO objects)
+            for graph_name, graph_data in graphs.items():
+                # Rewind the BytesIO object to the start
+                graph_data.seek(0)  
+                newsletterEmail.attach(
+                    filename=f"{graph_name}.png",
+                    content_type="image/png",
+                    data=graph_data.read(),
+                    disposition="inline",
+                    headers=[("Content-ID", f"<{graph_name}>")]
+                )
+
+            # Send email
+            mail.send(newsletterEmail)
+            app.logger.info(f"Newsletter sent to {first_name} ({recipient_email})")
+
+    except Exception as e:
+        app.logger.warning(f"Failed to send newsletter: {e}")
+
+    return "Ok Newsletter Tested"
+
 @app.route('/')
 def home():
 
@@ -394,11 +465,9 @@ def home():
         'signedin' : getSignedIn(),
         'graphtypes': getGraphTypes(),
         'grandprixlist': f1_data.get_events(),  # Grand Prix events from f1data.py
-        'graphtypes': getGraphTypes(),
         'recommendations': recommendations
     }
 
-    print(driverRankingsRace()[1])
     return render_template('index.html', data=payload)
 
 @app.route('/static/<path:path>')
