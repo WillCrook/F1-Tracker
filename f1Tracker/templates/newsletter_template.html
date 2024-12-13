@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>F1 Tracker Newsletter</title>
+    <title>Your F1 Tracker Newsletter</title>
 </head>
 <body>
-    <h1>Hello {{ name }}!</h1>
-    <p>Check out the latest updates from F1 Tracker for the {{ grandprix }}:</p>
-    <p>{{ updates }}</p>
-    <p>Thanks for being part of the F1 Tracker community!</p>
-    <p>Kind Regards,</p>
-    <p>Will</p>
+    <h1>Upcoming Grand Prix</h1>
+    <p>{{ upcoming_event }}</p>
+    
+    <h2>Graphs</h2>
+    {% for graph_name, graph_src in graphs.items() %}
+        <h3>{{ graph_name.replace('_', ' ').capitalize() }}</h3>
+        <img src="{{ graph_src }}" alt="{{ graph_name }}">
+    {% endfor %}
 </body>
 </html>

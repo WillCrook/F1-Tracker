@@ -8,6 +8,8 @@ from flask_mail import Mail, Message
 import os
 import secrets
 from dotenv import load_dotenv
+import base64
+from io import BytesIO
 
 app = Flask(__name__)
 
@@ -375,77 +377,48 @@ def getRecommendations(user_id):
 
     return recommendations
 
-@app.route('/testnewsletter')
+@app.route('/send-newsletter')
 def send_newsletter():
-    
     try:
-        app.logger.info("Attempting to send Newsletter")
-        last_grand_prix = f1_data.get_last_grand_prix()
+        # Prepare the graphs
+        grand_prix = f1_data.get_last_grand_prix()  # Set this dynamically based on current or upcoming race
+        position_change_graph = f1_data.get_positions_change_during_a_race(grand_prix)
+        quali_results_graph = f1_data.get_quali_results_overview(grand_prix)
+        team_pace_comparison_graph = f1_data.get_team_pace_comparison(grand_prix)
+
+        # List of graphs to be attached
+        graphs = [
+            ("Position Change During Race", position_change_graph),
+            ("Qualifying Results Overview", quali_results_graph),
+            ("Team Pace Comparison", team_pace_comparison_graph)
+        ]
         
-        # Initialize the graphs dictionary
-        graphs = {}
-        
-        # Dictionary of graph methods
-        graph_methods = {
-            "positions_change": f1_data.get_positions_change_during_a_race,
-            "quali_results": f1_data.get_quali_results_overview,
-            "team_pace": f1_data.get_team_pace_comparison,
-            "gear_shifts": f1_data.get_gear_shifts,
-            "driver_laptime": f1_data.get_driver_laptime_comparison,
-            "tyre_strategies": f1_data.get_tyre_strategies,
-        }
+        # Get subscribers
+        subscribers = db.query_db("SELECT firstName, email FROM users WHERE newsletter = 1")
 
-        # Log the type of return value for each graph
-        for graph_name, method in graph_methods.items():
-            graph_data = method(last_grand_prix)
-            app.logger.info(f"Type of {graph_name}: {type(graph_data)}")  # Log type for debugging
-            if isinstance(graph_data, list):
-                graphs[graph_name] = graph_data[0]  # Take the first element if it's a list
-            else:
-                graphs[graph_name] = graph_data
-
-        # Render the newsletter template
-        html_body = render_template(
-            "newsletter_template.html",
-            upcoming_event=f1_data.get_upcoming_grand_prix_info(),
-            graphs=graphs
-        )
-
-        # Get subscribers from the database
-        subscribers = db.query_db("SELECT email, firstName FROM users WHERE newsletter = 1 AND verified = 1")
-
-        # Send the email to each subscriber
+        # Send to all subscribers
         for subscriber in subscribers:
-            recipient_email = subscriber['email']
-            first_name = subscriber['firstName']
+            # Extract email from subscriber dictionary
+            email = subscriber['email']
 
-            # Configure email
-            newsletterEmail = Message(
-                subject="Your F1 Tracker Newsletter",
-                recipients=[recipient_email],
-                html=html_body
-            )
+            # Create message
+            msg = Message("F1 Race Update - Newsletter", recipients=[email])
 
-            # Attach graphs (as BytesIO objects)
-            for graph_name, graph_data in graphs.items():
-                # Rewind the BytesIO object to the start
-                graph_data.seek(0)  
-                newsletterEmail.attach(
-                    filename=f"{graph_name}.png",
-                    content_type="image/png",
-                    data=graph_data.read(),
-                    disposition="inline",
-                    headers=[("Content-ID", f"<{graph_name}>")]
-                )
+            # Add text content to the email
+            msg.body = "Dear Subscriber,\n\nHere is your latest F1 race update, with graphs for the latest race."
 
-            # Send email
-            mail.send(newsletterEmail)
-            app.logger.info(f"Newsletter sent to {first_name} ({recipient_email})")
+            # Attach the graphs
+            for graph_title, graph_data in graphs:
+                graph_file = BytesIO(graph_data.read())  # Assuming graph_data is a file-like object
+                msg.attach(f"{graph_title}.png", "image/png", graph_file.read())
+                
+            # Send the email
+            mail.send(msg)
+
+        return "Newsletter sent successfully!", 200
 
     except Exception as e:
-        app.logger.warning(f"Failed to send newsletter: {e}")
-
-    return "Ok Newsletter Tested"
+        return f"Error sending newsletter: {e}", 500
 
 @app.route('/')
 def home():

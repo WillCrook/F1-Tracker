@@ -181,7 +181,6 @@ class F1Data:
             .sort_values()
             .index
         )
-        print(team_order)
 
         # make a color palette associating team names to hex codes
         team_palette = {team: fastf1.plotting.get_team_color(team, session=race)
@@ -289,13 +288,11 @@ class F1Data:
         # get laps for top 10 (points).
         # remove slow laps (eg. yellow flag, VSC, SC, pitstops etc.) as they make the graph axis look whack.
         point_finishers = race.drivers[:10]
-        print(point_finishers)
         driver_laps = race.laps.pick_drivers(point_finishers).pick_quicklaps()
         driver_laps = driver_laps.reset_index()
 
         #get driver codes in the finishing order do display them on the graph.
         finishing_order = [race.get_driver(i)["Abbreviation"] for i in point_finishers]
-        print(finishing_order)
 
         # violin plots to show the distributions.
         # then I use swarm plot to show the actual laptimes.
@@ -353,11 +350,9 @@ class F1Data:
         
         # Get the list of driver numbers
         drivers = session.drivers
-        print(drivers)
 
         # Convert the driver numbers to three letter abbreviations
         drivers = [session.get_driver(driver)["Abbreviation"] for driver in drivers]
-        print(drivers)
 
         # We need to find the stint length and compound used
         # for every stint by every driver.
@@ -371,7 +366,6 @@ class F1Data:
         # The number in the LapNumber column now stands for the number of observations
         # in that group aka the stint length.
         stints = stints.rename(columns={"LapNumber": "StintLength"})
-        print(stints)
 
         # Now we can plot the strategies for each driver
         fig, ax = plt.subplots(figsize=(15, 10))
