@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Admin Terminal</title>
+</head>
+<body>
+    <h1>Admin Terminal</h1>
+    <table>
+        <tr>
+            <th>User ID</th>
+            <th>Email</th>
+            <th>First Name</th>
+            <th>Verified</th>
+        </tr>
+        {% for user in users %}
+        <tr>
+            <td>{{ user['userID'] }}</td>
+            <td>{{ user['email'] }}</td>
+            <td>{{ user['firstname'] }}</td>
+            <td>{{ 'Yes' if user['verified'] else 'No' }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

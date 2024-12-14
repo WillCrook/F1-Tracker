@@ -106,7 +106,7 @@ def twoFA():
             flash('Login successful!', 'success')
             return redirect(url_for('home'))
         else:
-            flash('Invalid verification code. Please try again.', 'error')
+            flash('Invalid login code. Please try again.', 'error')
 
     return render_template('twoFA.html')
 
@@ -239,7 +239,53 @@ def delete_account():
         app.logger.error(f"Error deleting account: {e}")
         flash('An error occurred while deleting your account. Please try again.', 'danger')
         return redirect(url_for('settings'))
- 
+
+def get_admin():
+    try:
+        email = session["email"]  
+        query = '''
+            SELECT admin.* 
+            FROM admin
+            JOIN users ON admin.userID = users.userID
+            WHERE users.email = ?
+        '''
+        admin_check = db.query_db(query, [email])
+        return bool(admin_check)
+    except:
+        return False
+
+@app.route('/admin', methods=['GET'])
+def admin_terminal():
+    if not get_admin():
+        flash("Unauthorized access!", "danger")
+        return redirect(url_for('home'))
+    
+    # Query all users from the database
+    users = db.query_db('SELECT userID, email, firstname, verified FROM users')
+    return render_template('admin.html', users=users)
+
+def add_admin(email, permissions):
+    # Query to check if the user exists and get their userID with a JOIN
+    query = '''
+        SELECT u.userID
+        FROM users u
+        LEFT JOIN admin a ON u.userID = a.userID
+        WHERE u.email = ?
+    '''
+    user = db.query_db(query, [email], one=True)
+
+    if user:
+        # If user exists, check if they are already an admin
+        if user['userID']:
+            return False  # The user is already an admin
+
+        # Insert the user as an admin with the specified permissions
+        insert_query = 'INSERT INTO admin (userID, permissions) VALUES (?, ?)'
+        db.query_db(insert_query, [user['userID'], permissions])
+        return True  # Admin added successfully
+    else:
+        return False  # User not found
+
 
 #Cache used to enhance perfomance of the website
 @cache.cached(timeout=3600, key_prefix='upcoming_grand_prix')
@@ -283,8 +329,6 @@ def generate_graph():
     grand_prix = request.args.get('grandPrix')
 
     #flash messages now in the html so that they display without refreshing the page and hitting the route
-    
-
 
     # Based on the selected graph type and Grand Prix, generate the appropriate graph
     if graph_type == "Position Changed during a Race":
@@ -430,15 +474,16 @@ def home():
 
     payload = {
         'highlights' : personalisedData(), # db
-        'qualiresults': qualiResults(), # db / ML
+        'qualiresults': qualiResults(), # api
         'driverrankingsrace': driverRankingsRace()[0], # db / ML
         'upcominggrandprixlist': getUpcomingGrandPrixInfo(), # api 
         'practiseresults' : practiseResults(), # api
         'predictionaccuracy' : str(driverRankingsRace()[1]) + "%", # ML note that prediction accuracy is dRR[1] 
-        'signedin' : getSignedIn(),
-        'graphtypes': getGraphTypes(),
+        'signedin' : getSignedIn(), #session
+        'graphtypes': getGraphTypes(), #f1data
         'grandprixlist': f1_data.get_events(),  # Grand Prix events from f1data.py
-        'recommendations': recommendations
+        'recommendations': recommendations,
+        'isadmin' : get_admin() 
     }
 
     return render_template('index.html', data=payload)

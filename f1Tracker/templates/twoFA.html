@@ -33,7 +33,7 @@
                 <div class="card-body">
                     <form action="{{ url_for('twoFA') }}" method="POST">
                         <div class="form-group">
-                            <label for="token">Enter Verification Code:</label>
+                            <label for="token">Enter Login Code:</label>
                             <input type="text" class="form-control" id="token" name="token" required>
                         </div>
                         {% with messages = get_flashed_messages() %}
@@ -43,7 +43,7 @@
                                 </div>
                             {% endif %}
                         {% endwith %}
-                        <button type="submit" class="btn btn-primary btn-block">Verify</button>
+                        <button type="submit" class="btn btn-primary btn-block">Login</button>
                     </form>
                 </div>
             </div>

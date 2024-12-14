@@ -322,12 +322,19 @@ function showToast(message, category) {
           <img src="https://avatars.githubusercontent.com/u/78361326?s=96&v=4" alt="mdo" width="32" height="32" class="rounded-circle">
         </a>
         <ul class="dropdown-menu text-small">
+
+          {% if data.isadmin %}
+          <li><a class="dropdown-item" href="{{ url_for('admin_terminal') }}">Admin Terminal</a></li>
+          <li><hr class="dropdown-divider"></li>
+          {% endif %}
+          
           <li><a class="dropdown-item" href="{{ url_for('settings') }}">Settings</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="{{ url_for('logout') }}">Sign out</a></li>
         </ul>
       </div>
       {% else %}
+
       <div class="dropdown text-end">
         <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
           <img src="https://t3.ftcdn.net/jpg/05/70/71/06/360_F_570710660_Jana1ujcJyQTiT2rIzvfmyXzXamVcby8.jpg" alt="mdo" width="32" height="32" class="rounded-circle">
