@@ -79,7 +79,6 @@ INSERT INTO teams (teamID, teamName) VALUES
   (9, 'Williams'),
   (10, 'Haas');
 
--- INSERT INITIAL DATA INTO drivers TABLE
 INSERT INTO drivers (driverID, driverName, teamID) VALUES
   (1, 'Charles Leclerc', 1),
   (2, 'Max Verstappen', 2),

@@ -178,8 +178,8 @@ def settings():
         team = request.form['team']
         newsletter = request.form.get('newsletter', 0)  # Default to 0 if not selected
 
-        # Check if the password is there if it is not then dont execute
         if password:
+            password = generate_password_hash(password)
             # Update password only if it's provided
             db.get_db().execute(
                 '''UPDATE users SET firstName = ?, password = ?, driverID = ?, teamID = ?, newsletter = ?
@@ -264,9 +264,27 @@ def admin_terminal():
 
     # Sorting setup (default: by userID)
     sort_by = request.args.get('sort_by', 'userID')
-    valid_sort_columns = {'userID', 'email', 'is_admin'}
+    valid_sort_columns = ['userID', 'email', 'is_admin']
     if sort_by not in valid_sort_columns:
         sort_by = 'userID'
+
+    stats_query = '''
+    SELECT 
+        COUNT(CASE WHEN users.newsletter = 1 THEN 1 END) AS newsletter_count,
+        most_common_driver.driverName AS most_common_driver,
+        most_common_team.teamName AS most_common_team
+    FROM users
+    LEFT JOIN drivers AS most_common_driver
+        ON users.driverID = most_common_driver.driverID
+    LEFT JOIN teams AS most_common_team
+        ON users.teamID = most_common_team.teamID
+    GROUP BY most_common_driver.driverName, most_common_team.teamName
+    '''
+    stats = db.query_db(stats_query)
+    newsletter_count = stats[0]['newsletter_count'] if stats else 0
+    most_common_driver = stats[0]['most_common_driver'] if stats else None
+    most_common_team = stats[0]['most_common_team'] if stats else None
+
 
     # Fetch users with admin status using JOIN
     query = f'''
@@ -277,7 +295,9 @@ def admin_terminal():
         LEFT JOIN admin ON users.userID = admin.userID
     '''
     users = db.query_db(query)
-    users = merge_sort(users, key=sort_by)
+    users = merge_sort(users, sort_by)
+    if sort_by == 'is_admin':
+        users.reverse()  # To display the list by admin first
 
     # Handle actions based on permissions
     if request.method == 'POST':
@@ -307,7 +327,9 @@ def admin_terminal():
 
         return redirect(url_for('admin_terminal'))
 
-    return render_template('admin.html', users=users, sort_by=sort_by, admin_permissions=admin_permissions)
+    return render_template('admin.html', users=users, sort_by=sort_by, admin_permissions=admin_permissions, 
+                           newsletter_count=newsletter_count, most_common_driver=most_common_driver, 
+                           most_common_team=most_common_team)
 
 def add_admin(email, permissions):
     # Query to check if the user exists and get their userID with a LEFT JOIN
