@@ -28,11 +28,15 @@ def make_dicts(cursor, row):
     return dict((cursor.description[idx][0], value)
                 for idx, value in enumerate(row))
 
-def query_db(query, args=()):
+def query_db(query, args=(), one=False):
     cur = get_db().execute(query, args)
     result = cur.fetchall()
     cur.close()
-    return result
+    
+    if one:
+        return result[0] if result else None
+    else:
+        return result
 
 def close_connection():
     db = getattr(g, '_database', None)

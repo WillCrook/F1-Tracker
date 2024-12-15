@@ -241,33 +241,78 @@ def delete_account():
         return redirect(url_for('settings'))
 
 def get_admin():
-    try:
-        email = session["email"]  
-        query = '''
-            SELECT admin.* 
-            FROM admin
-            JOIN users ON admin.userID = users.userID
-            WHERE users.email = ?
-        '''
-        admin_check = db.query_db(query, [email])
-        return bool(admin_check)
-    except:
-        return False
+    email = session.get('email')
+    if not email:
+        return 0  # Return 0 if email is not found (non-admin)
+    
+    query = '''
+        SELECT admin.permissions
+        FROM admin
+        INNER JOIN users ON admin.userID = users.userID
+        WHERE users.email = ?
+    '''
+    result = db.query_db(query, [email], one=True)
+    return result['permissions'] if result else 0  # Default to 0 if no admin permissions
 
-@app.route('/admin', methods=['GET'])
+
+@app.route('/admin', methods=['GET', 'POST'])
 def admin_terminal():
-    if not get_admin():
+    admin_permissions = get_admin()  # Check if the user is an admin
+    if not admin_permissions:
         flash("Unauthorized access!", "danger")
         return redirect(url_for('home'))
-    
-    # Query all users from the database
-    users = db.query_db('SELECT userID, email, firstname, verified FROM users')
-    return render_template('admin.html', users=users)
+
+    # Sorting setup (default: by userID)
+    sort_by = request.args.get('sort_by', 'userID')
+    valid_sort_columns = {'userID', 'email', 'is_admin'}
+    if sort_by not in valid_sort_columns:
+        sort_by = 'userID'
+
+    # Fetch users with admin status using JOIN
+    query = f'''
+        SELECT users.userID, users.email, users.firstname, users.verified, 
+               users.newsletter, users.driverID, users.teamID,
+               CASE WHEN admin.userID IS NOT NULL THEN admin.permissions ELSE 0 END AS is_admin
+        FROM users
+        LEFT JOIN admin ON users.userID = admin.userID
+    '''
+    users = db.query_db(query)
+    users = merge_sort(users, key=sort_by)
+
+    # Handle actions based on permissions
+    if request.method == 'POST':
+        action = request.form.get('action')
+        user_id = request.form.get('user_id')
+        email = request.form.get('email')
+
+        if action == 'send_newsletter' and admin_permissions >= 1:
+            send_newsletter()
+            flash("Newsletter sent successfully!", "success")
+
+        elif action == 'add_admin' and admin_permissions >= 3:
+            level = int(request.form.get('admin_level', 1))
+            add_admin(email, level)
+            flash(f"{email} added as admin!", "success")
+
+        elif action == 'remove_admin' and admin_permissions >= 3:
+            remove_admin(user_id)
+            flash("User removed from admins!", "info")
+
+        elif action == 'delete_user' and admin_permissions >= 3:
+            delete_user(user_id)
+            flash("User account deleted!", "danger")
+
+        else:
+            flash("You do not have permission to perform this action.", "danger")
+
+        return redirect(url_for('admin_terminal'))
+
+    return render_template('admin.html', users=users, sort_by=sort_by, admin_permissions=admin_permissions)
 
 def add_admin(email, permissions):
-    # Query to check if the user exists and get their userID with a JOIN
+    # Query to check if the user exists and get their userID with a LEFT JOIN
     query = '''
-        SELECT u.userID
+        SELECT u.userID, a.permissions
         FROM users u
         LEFT JOIN admin a ON u.userID = a.userID
         WHERE u.email = ?
@@ -275,17 +320,66 @@ def add_admin(email, permissions):
     user = db.query_db(query, [email], one=True)
 
     if user:
-        # If user exists, check if they are already an admin
-        if user['userID']:
+        # If the user already has permissions in the admin table, they're already an admin
+        if user['permissions'] is not None:
+            app.logger.info(f"{email} is already an admin.")
             return False  # The user is already an admin
 
         # Insert the user as an admin with the specified permissions
         insert_query = 'INSERT INTO admin (userID, permissions) VALUES (?, ?)'
         db.query_db(insert_query, [user['userID'], permissions])
+        db.get_db().commit()
+        app.logger.info(f"{email} has been made an admin")
         return True  # Admin added successfully
     else:
+        app.logger.error(f"User with email {email} not found.")
         return False  # User not found
 
+    
+def remove_admin(user_id):
+    query = 'DELETE FROM admin WHERE userID = ?'
+    db.query_db(query, [user_id])
+    db.get_db().commit()
+    app.logger.info(f"User ID: {user_id} has been removed from admin")
+
+def delete_user(user_id):
+    # First, check if the user is an admin
+    query = 'SELECT * FROM admin WHERE userID = ?'
+    admin_record = db.query_db(query, [user_id], one=True)
+
+    # If the user is an admin, delete them from the admin table
+    if admin_record:
+        delete_admin_query = 'DELETE FROM admin WHERE userID = ?'
+        db.query_db(delete_admin_query, [user_id])
+        db.get_db().commit()  # Commit changes to admin table
+
+    # Now, delete the user from the users table
+    delete_user_query = 'DELETE FROM users WHERE userID = ?'
+    db.query_db(delete_user_query, [user_id])
+    db.get_db().commit()  # Commit changes to users table
+    app.logger.info(f"User ID: {user_id} and associated admin record (if any) have been deleted.")
+
+
+def merge_sort(data, key):
+    if len(data) <= 1:
+        return data
+
+    mid = len(data) // 2
+    left = merge_sort(data[:mid], key)
+    right = merge_sort(data[mid:], key)
+
+    return merge(left, right, key)
+
+def merge(left, right, key):
+    result = []
+    while left and right:
+        if str(left[0][key]) <= str(right[0][key]):
+            result.append(left.pop(0))
+        else:
+            result.append(right.pop(0))
+
+    result.extend(left if left else right)
+    return result
 
 #Cache used to enhance perfomance of the website
 @cache.cached(timeout=3600, key_prefix='upcoming_grand_prix')
@@ -314,8 +408,6 @@ def personalisedData():
 @cache.cached(timeout=3600, key_prefix='driver_rankings_quali')
 def driverRankingsRace():
     rankings, accuracy = ml.getRacePredictions()
-    # return [{"rank": 1,
-    #        "driver":"Charles Leclerc"},100]
     return [rankings, accuracy]
         
 def qualiResults():
@@ -464,9 +556,7 @@ def send_newsletter():
     except Exception as e:
         return f"Error sending newsletter: {e}", 500
 
-@app.route('/')
-def home():
-
+def get_payload():
     user_id = session.get('user_id')  # Assuming user ID is stored in session after login
     recommendations = None
     if user_id:
@@ -485,6 +575,13 @@ def home():
         'recommendations': recommendations,
         'isadmin' : get_admin() 
     }
+
+    return payload
+
+@app.route('/')
+def home():
+
+    payload = get_payload()
 
     return render_template('index.html', data=payload)
 
