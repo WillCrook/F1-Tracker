@@ -10,6 +10,7 @@ import secrets
 from dotenv import load_dotenv
 import base64
 from io import BytesIO
+from datetime import datetime, timedelta, timezone
 
 app = Flask(__name__)
 
@@ -96,7 +97,7 @@ def login():
         return render_template('login.html', incorrectpass=incorrectPass)
 
 
-@app.route('/verify_login', methods=['POST'])
+@app.route('/twoFA', methods=['POST'])
 def twoFA():
     if request.method == 'POST':
         token = request.form['token']
@@ -109,6 +110,83 @@ def twoFA():
             flash('Invalid login code. Please try again.', 'error')
 
     return render_template('twoFA.html')
+
+def generate_reset_token(user_email):
+    token = secrets.token_urlsafe(32)  # Generate secure token
+    expiry = datetime.now(timezone.utc) + timedelta(hours=1)  # Token valid for 1 hour
+    
+    query = '''
+        UPDATE users
+        SET reset_token = ?, reset_token_expiry = ?
+        WHERE email = ?
+    '''
+    db.get_db().execute(query, (token, expiry, user_email))
+    return token
+
+def send_reset_email(user_email):
+    # Generate the reset token
+    token = generate_reset_token(user_email)
+    reset_url = url_for('reset_password', token=token, _external=True)
+
+    # Create the email content
+    subject = "Password Reset Request"
+    body = f"""
+    Hello,
+    
+    You requested a password reset. Click the link below to reset your password:
+    {reset_url}
+    
+    If you did not request this, ignore this email.
+    """
+
+    # Create and send the email
+    msg = Message(subject=subject, recipients=[user_email], body=body)
+    mail.send(msg)
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    query = '''
+        SELECT email, reset_token_expiry 
+        FROM users 
+        WHERE reset_token = ?
+    '''
+    result = db.query_db(query, (token,))
+    if not result or datetime.now(timezone.utc) > result[0]['reset_token_expiry']:
+        flash("Invalid or expired token.", "danger")
+        return redirect(url_for('home'))
+    
+    if request.method == 'POST':
+        new_password = request.form['new_password']
+        hashed_password = generate_password_hash(new_password)
+        
+        update_query = '''
+            UPDATE users
+            SET password = ?, reset_token = NULL, reset_token_expiry = NULL
+            WHERE reset_token = ?
+        '''
+        db.get_db().execute(update_query, (hashed_password, token))
+        flash("Password reset successfully!", "success")
+        return redirect(url_for('login'))
+    
+    return render_template('reset_password.html', token=token)
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        user_email = request.form['email']
+        
+        query = 'SELECT email FROM users WHERE email = ?'
+        result = db.query_db(query, (user_email,))
+        
+        if result:
+            send_reset_email(user_email)
+            flash("Password reset email sent!", "info")
+        else:
+            flash("Email not found.", "danger")
+        
+        return redirect(url_for('forgot_password'))
+    
+    return render_template('forgot_password.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -221,7 +299,7 @@ def logout():
     flash("Succesfully logged out!", 'success')
     return redirect(url_for('home'))
 
-@app.route('/delete_account', methods=['POST'])
+@app.route('/delete-account', methods=['POST'])
 def delete_account():
     try:
         email = session.get('email')

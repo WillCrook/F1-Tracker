@@ -17,6 +17,8 @@ CREATE TABLE users (
   teamID INTEGER,
   newsletter INTEGER,  -- Represent BOOLEAN as INTEGER (0 = FALSE, 1 = TRUE)
   verified INTEGER,     -- Represent BOOLEAN as INTEGER (0 = FALSE, 1 = TRUE)
+  reset_token VARCHAR(255),
+  reset_token_expiry DATETIME,
   FOREIGN KEY (driverID) REFERENCES drivers(driverID),
   FOREIGN KEY (teamID) REFERENCES teams(teamID)
 );

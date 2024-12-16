@@ -1,91 +1,43 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="auto">
-<head>
-    <script src="../assets/js/color-modes.js"></script>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <title>F1 Tracker</title>
-    <link rel="icon" type="image/x-icon" href="https://d3faj0w6aqatyx.cloudfront.net/uploads/2018/01/19151152/FORMULA-1%C2%AE-UNLEASHES-NEW-BRAND-IDENTITY-INSPIRED-BY-ITS-FANS-OPTION-2.jpg">
-    <link rel="canonical" href="https://getbootstrap.com/docs/5.3/examples/sign-in/">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@3">
-    <link href="../static/assets/dist/css/bootstrap.min.css" rel="stylesheet">
+<main class="form-signin w-50 m-auto">
+    <form method="post" action="/login"> <!-- Specify the action attribute -->
+        <a href="/" class="d-flex justify-content-center mb-4"> <!-- Link back to the homepage -->
+            <img class="mb-4" src="https://d3faj0w6aqatyx.cloudfront.net/uploads/2018/01/19151152/FORMULA-1%C2%AE-UNLEASHES-NEW-BRAND-IDENTITY-INSPIRED-BY-ITS-FANS-OPTION-2.jpg" alt="Formula 1 Logo" width="72" height="57">
+        </a>
+        <h1 class="h3 mb-3 fw-normal text-center">Please sign in</h1>
 
-    <style>
-        .bd-placeholder-img {
-            font-size: 1.125rem;
-            text-anchor: middle;
-            user-select: none;
-        }
+        <div class="form-floating">
+            <input type="email" class="form-control" id="floatingInput" placeholder="name@example.com" name="email" required>
+            <label for="floatingInput">Email address</label>
+        </div>
+        <div class="form-floating">
+            <input type="password" class="form-control" id="floatingPassword" placeholder="Password" name="password" required>
+            <label for="floatingPassword">Password</label>
+        </div>
 
-        @media (min-width: 768px) {
-            .bd-placeholder-img-lg {
-                font-size: 3.5rem;
-            }
-        }
+        <!-- Error messages -->
+        {% if incorrectpass %}
+        <div class="alert alert-danger" role="alert">
+            Incorrect Password! Please Try Again.
+        </div>
+        {% endif %}
+        {% if invalidemail %}
+        <div class="alert alert-danger" role="alert">
+            There is no account found with that Email! Please Try Again or Register. 
+        </div>
+        {% endif %}
 
-        .b-example-divider {
-            width: 100%;
-            height: 3rem;
-            background-color: rgba(0, 0, 0, .1);
-            border: solid rgba(0, 0, 0, .15);
-            border-width: 1px 0;
-            box-shadow: inset 0 .5em 1.5em rgba(0, 0, 0, .1), inset 0 .125em .5em rgba(0, 0, 0, .15);
-        }
+        <!-- Remember me checkbox -->
+        <div class="form-check text-start my-3">
+            <input class="form-check-input" type="checkbox" value="remember-me" id="flexCheckDefault">
+            <label class="form-check-label" for="flexCheckDefault">Remember me</label>
+        </div>
 
-        .bd-mode-toggle {
-            z-index: 1500;
-        }
-    </style>
+        <!-- Forgot password link -->
+        <div class="text-center mb-3">
+            <a href="{{ url_for('forgot_password') }}" class="text-decoration-none">Forgot your password?</a>
+        </div>
 
-    <!-- Custom styles for this template -->
-    <link href="../assets/sign-in.css" rel="stylesheet">
-</head>
-<body class="d-flex align-items-center py-4 bg-body-tertiary">
-    <div class="dropdown position-fixed bottom-0 end-0 mb-3 me-3 bd-mode-toggle">
-        <button class="btn btn-bd-primary py-2 dropdown-toggle d-flex align-items-center" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown" aria-label="Toggle theme (auto)">
-            <span class="visually-hidden" id="bd-theme-text">Toggle theme</span>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="bd-theme-text">
-            <li><button type="button" class="dropdown-item" data-bs-theme-value="light">Light</button></li>
-            <li><button type="button" class="dropdown-item" data-bs-theme-value="dark">Dark</button></li>
-            <li><button type="button" class="dropdown-item active" data-bs-theme-value="auto">Auto</button></li>
-        </ul>
-    </div>
-
-    <main class="form-signin w-50 m-auto">
-        <form method="post" action="/login"> <!-- Specify the action attribute -->
-            <a href="/" class="d-flex justify-content-center mb-4"> <!-- Link back to the homepage -->
-                <img class="mb-4" src="https://d3faj0w6aqatyx.cloudfront.net/uploads/2018/01/19151152/FORMULA-1%C2%AE-UNLEASHES-NEW-BRAND-IDENTITY-INSPIRED-BY-ITS-FANS-OPTION-2.jpg" alt="Formula 1 Logo" width="72" height="57">
-            </a>
-            <h1 class="h3 mb-3 fw-normal text-center">Please sign in</h1>
-
-            <div class="form-floating">
-                <input type="email" class="form-control" id="floatingInput" placeholder="name@example.com" name="email" required>
-                <label for="floatingInput">Email address</label>
-            </div>
-            <div class="form-floating">
-                <input type="password" class="form-control" id="floatingPassword" placeholder="Password" name="password" required>
-                <label for="floatingPassword">Password</label>
-            </div>
-            {% if incorrectpass %}
-            <div class="alert alert-danger" role="alert">
-                Incorrect Password! Please Try Again.
-            </div>
-            {% endif %}
-            {% if invalidemail %}
-            <div class="alert alert-danger" role="alert">
-                There is no account found with that Email! Please Try Again or Register. 
-            </div>
-            {% endif %}
-            <div class="form-check text-start my-3">
-                <input class="form-check-input" type="checkbox" value="remember-me" id="flexCheckDefault">
-                <label class="form-check-label" for="flexCheckDefault">Remember me</label>
-            </div>
-            <button class="btn btn-primary w-100 py-2" type="submit">Sign in</button>
-        </form>
-    </main>
-    <script src="../assets/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
-
+        <!-- Submit button -->
+        <button class="btn btn-primary w-100 py-2" type="submit">Sign in</button>
+    </form>
+</main>
