@@ -120,7 +120,8 @@ def generate_reset_token(user_email):
         SET reset_token = ?, reset_token_expiry = ?
         WHERE email = ?
     '''
-    db.get_db().execute(query, (token, expiry, user_email))
+    db.query_db(query, (token, expiry, user_email))
+    db.get_db().commit()
     return token
 
 def send_reset_email(user_email):
@@ -151,8 +152,21 @@ def reset_password(token):
         WHERE reset_token = ?
     '''
     result = db.query_db(query, (token,))
-    if not result or datetime.now(timezone.utc) > result[0]['reset_token_expiry']:
+    
+    if not result:
         flash("Invalid or expired token.", "danger")
+        return redirect(url_for('home'))
+
+    # Convert reset_token_expiry to a datetime object
+    try:
+        reset_token_expiry = datetime.fromisoformat(result[0]['reset_token_expiry'])
+    except (KeyError, ValueError):
+        flash("Invalid token expiry format.", "danger")
+        return redirect(url_for('home'))
+    
+    # Check if the token has expired
+    if datetime.now(timezone.utc) > reset_token_expiry:
+        flash("Token has expired.", "danger")
         return redirect(url_for('home'))
     
     if request.method == 'POST':
@@ -165,11 +179,12 @@ def reset_password(token):
             WHERE reset_token = ?
         '''
         db.get_db().execute(update_query, (hashed_password, token))
+        db.get_db().commit()
         flash("Password reset successfully!", "success")
         return redirect(url_for('login'))
     
     return render_template('reset_password.html', token=token)
-
+    
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':

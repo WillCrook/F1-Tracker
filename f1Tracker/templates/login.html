@@ -1,43 +1,99 @@
-<main class="form-signin w-50 m-auto">
-    <form method="post" action="/login"> <!-- Specify the action attribute -->
-        <a href="/" class="d-flex justify-content-center mb-4"> <!-- Link back to the homepage -->
-            <img class="mb-4" src="https://d3faj0w6aqatyx.cloudfront.net/uploads/2018/01/19151152/FORMULA-1%C2%AE-UNLEASHES-NEW-BRAND-IDENTITY-INSPIRED-BY-ITS-FANS-OPTION-2.jpg" alt="Formula 1 Logo" width="72" height="57">
-        </a>
-        <h1 class="h3 mb-3 fw-normal text-center">Please sign in</h1>
-
-        <div class="form-floating">
-            <input type="email" class="form-control" id="floatingInput" placeholder="name@example.com" name="email" required>
-            <label for="floatingInput">Email address</label>
-        </div>
-        <div class="form-floating">
-            <input type="password" class="form-control" id="floatingPassword" placeholder="Password" name="password" required>
-            <label for="floatingPassword">Password</label>
-        </div>
-
-        <!-- Error messages -->
-        {% if incorrectpass %}
-        <div class="alert alert-danger" role="alert">
-            Incorrect Password! Please Try Again.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa; /* Light grey background for contrast */
+        }
+        .login-container {
+            max-width: 400px;
+            margin: auto;
+            padding: 2rem;
+            background: #ffffff; /* White card */
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .logo img {
+            width: 80px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container d-flex justify-content-center align-items-center vh-100">
+        <div class="login-container">
+            <!-- Logo and Welcome Text -->
+            <div class="text-center logo mb-4">
+                <a href="/">
+                    <img src="https://d3faj0w6aqatyx.cloudfront.net/uploads/2018/01/19151152/FORMULA-1%C2%AE-UNLEASHES-NEW-BRAND-IDENTITY-INSPIRED-BY-ITS-FANS-OPTION-2.jpg" 
+                         alt="Formula 1 Logo" class="rounded-circle">
+                </a>
+                <h1 class="h4 fw-bold mt-3">Sign In</h1>
+                <p class="text-muted">Access your account</p>
+            </div>
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="mb-3">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
         </div>
         {% endif %}
-        {% if invalidemail %}
-        <div class="alert alert-danger" role="alert">
-            There is no account found with that Email! Please Try Again or Register. 
-        </div>
-        {% endif %}
+        {% endwith %}
+            <!-- Login Form -->
+            <form method="post" action="/login">
+                <!-- Email Field -->
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email address</label>
+                    <input type="email" class="form-control rounded-pill" id="email" name="email" placeholder="name@example.com" required>
+                </div>
 
-        <!-- Remember me checkbox -->
-        <div class="form-check text-start my-3">
-            <input class="form-check-input" type="checkbox" value="remember-me" id="flexCheckDefault">
-            <label class="form-check-label" for="flexCheckDefault">Remember me</label>
-        </div>
+                <!-- Password Field -->
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control rounded-pill" id="password" name="password" placeholder="Password" required>
+                </div>
 
-        <!-- Forgot password link -->
-        <div class="text-center mb-3">
-            <a href="{{ url_for('forgot_password') }}" class="text-decoration-none">Forgot your password?</a>
-        </div>
+                <!-- Error Messages -->
+                {% if incorrectpass %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    Incorrect password! Please try again.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endif %}
+                {% if invalidemail %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    Email not found. Please try again or register.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endif %}
 
-        <!-- Submit button -->
-        <button class="btn btn-primary w-100 py-2" type="submit">Sign in</button>
-    </form>
-</main>
+                <!-- Forgot Password & Remember Me -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <a href="{{ url_for('forgot_password') }}" class="small text-primary text-decoration-none">Forgot password?</a>
+                </div>
+
+                <!-- Login Button -->
+                <div class="d-grid mb-3">
+                    <button type="submit" class="btn btn-primary rounded-pill">Sign In</button>
+                </div>
+
+                <!-- Register Link -->
+                <p class="text-center text-muted small">
+                    Don't have an account? <a href="{{ url_for('register') }}" class="text-primary text-decoration-none">Register now</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
