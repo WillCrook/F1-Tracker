@@ -1,6 +1,5 @@
 <!doctype html>
 <html lang="en" data-bs-theme="auto">
-
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -19,467 +18,238 @@
     
       // Function to trigger graph generation based on the selected dropdown values
       function generateGraph() {
-        // Get the selected graph type and Grand Prix
         const graphType = document.getElementById('graphTypeButton').textContent;
         const grandPrix = document.getElementById('grandPrixButton').textContent;
     
-        // Ensure valid selections (you can customize this check based on default button text)
         if (graphType === 'Select Graph Type' || grandPrix === 'Select Grand Prix') {
           alert('Please select both Graph Type and Grand Prix.');
           return;
         }
-    
-        // Make an AJAX call to generate the graph (optional: you could also submit via a form)
+
+        // Flash message for generating graph
+        const toastMessage = `Generating ${graphType} graph for ${grandPrix}!`;
+        showToast(toastMessage, 'info');
+
+        // Fetch to generate the graph
         fetch(`/generate-graph?graphType=${encodeURIComponent(graphType)}&grandPrix=${encodeURIComponent(grandPrix)}`)
-          .then(response => response.blob())  // Fetch the image
+          .then(response => response.blob())
           .then(imageBlob => {
             const imageUrl = URL.createObjectURL(imageBlob);
-            // Set the image URL to display it in the graph container
             document.getElementById('graphImage').src = imageUrl;
+            // Optionally flash another message when the graph is loaded
+            showToast('Graph successfully generated!', 'success');
           })
           .catch(error => {
             console.error('Error generating graph:', error);
+            showToast('Error generating the graph. Please try again.', 'danger');
           });
       }
 
-      function generateGraph() {
-  // Get selected values
-  const graphType = document.getElementById('graphTypeButton').textContent;
-  const grandPrix = document.getElementById('grandPrixButton').textContent;
+      // Helper function to show toasts
+      function showToast(message, category) {
+        const toastContainer = document.getElementById('toastContainer');
+        const toastHTML = `
+          <div class="toast align-items-center text-white bg-${category} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true">
+            <div class="d-flex">
+              <div class="toast-body">
+                ${message}
+              </div>
+              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+          </div>`;
+        
+        toastContainer.innerHTML = toastHTML;
+        
+        const toastEl = document.querySelector('.toast');
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+      }
 
-  if (graphType === 'Select Graph Type' || grandPrix === 'Select Grand Prix') {
-    alert('Please select both Graph Type and Grand Prix.');
-    return;
-  }
-
-  // Flash message for generating graph
-  const toastMessage = `Generating ${graphType} graph for ${grandPrix}!`;
-  showToast(toastMessage, 'info');
-
-  // Fetch to generate the graph
-  fetch(`/generate-graph?graphType=${encodeURIComponent(graphType)}&grandPrix=${encodeURIComponent(grandPrix)}`)
-    .then(response => response.blob())
-    .then(imageBlob => {
-      const imageUrl = URL.createObjectURL(imageBlob);
-      document.getElementById('graphImage').src = imageUrl;
-      // Optionally flash another message when the graph is loaded
-      showToast('Graph successfully generated!', 'success');
-    })
-    .catch(error => {
-      console.error('Error generating graph:', error);
-      showToast('Error generating the graph. Please try again.', 'danger');
-    });
-}
-
-// Helper function to show toasts
-function showToast(message, category) {
-  const toastContainer = document.getElementById('toastContainer');
-  const toastHTML = `
-    <div class="toast align-items-center text-white bg-${category} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="false">
-      <div class="d-flex">
-        <div class="toast-body">
-          ${message}
-        </div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-      </div>
-    </div>`;
-  
-  toastContainer.innerHTML = toastHTML;
-  
-  var toastEl = document.querySelector('.toast');
-  var toast = new bootstrap.Toast(toastEl);
-  toast.show();
-}
-
+      // Show toast messages after page load
+      document.addEventListener('DOMContentLoaded', function() {
+        const toastElList = [].slice.call(document.querySelectorAll('.toast'));
+        const toastList = toastElList.map(function(toastEl) {
+          return new bootstrap.Toast(toastEl);
+        });
+        toastList.forEach(toast => toast.show());
+      });
     </script>
-
-
   </head>
 
-  <head><script src="../static/assets/js/color-modes.js"></script>
-
-
-    <link rel="canonical" href="https://getbootstrap.com/docs/5.3/examples/headers/">
-
-    
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@3">
-<link href="../static/assets/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <style>
-      .bd-placeholder-img {
-        font-size: 1.125rem;
-        text-anchor: middle;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        user-select: none;
-      }
-
-      @media (min-width: 768px) {
-        .bd-placeholder-img-lg {
-          font-size: 3.5rem;
-        }
-      }
-
-      .b-example-divider {
-        width: 100%;
-        height: 3rem;
-        background-color: rgba(0, 0, 0, .1);
-        border: solid rgba(0, 0, 0, .15);
-        border-width: 1px 0;
-        box-shadow: inset 0 .5em 1.5em rgba(0, 0, 0, .1), inset 0 .125em .5em rgba(0, 0, 0, .15);
-      }
-
-      .b-example-vr {
-        flex-shrink: 0;
-        width: 1.5rem;
-        height: 100vh;
-      }
-
-      .bi {
-        vertical-align: -.125em;
-        fill: currentColor;
-      }
-
-      .nav-scroller {
-        position: relative;
-        z-index: 2;
-        height: 2.75rem;
-        overflow-y: hidden;
-      }
-
-      .nav-scroller .nav {
-        display: flex;
-        flex-wrap: nowrap;
-        padding-bottom: 1rem;
-        margin-top: -1px;
-        overflow-x: auto;
-        text-align: center;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      .btn-bd-primary {
-        --bd-violet-bg: #ff0000;
-        --bd-violet-rgb: 112.520718, 44.062154, 249.437846;
-
-        --bs-btn-font-weight: 600;
-        --bs-btn-color: var(--bs-white);
-        --bs-btn-bg: var(--bd-violet-bg);
-        --bs-btn-border-color: var(--bd-violet-bg);
-        --bs-btn-hover-color: var(--bs-white);
-        --bs-btn-hover-bg: #ff0000;
-        --bs-btn-hover-border-color: #ff0000;
-        --bs-btn-focus-shadow-rgb: var(--bd-violet-rgb);
-        --bs-btn-active-color: var(--bs-btn-hover-color);
-        --bs-btn-active-bg: #ff0000;
-        --bs-btn-active-border-color: #ff0000;
-      }
-
-      .bd-mode-toggle {
-        z-index: 1500;
-      }
-
-      .bd-mode-toggle .dropdown-menu .active .bi {
-        display: block !important;
-      }
-    </style>
-
-
-<link href="../static/assets/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <style>
-      .bd-placeholder-img {
-        font-size: 1.125rem;
-        text-anchor: middle;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        user-select: none;
-      }
-
-      @media (min-width: 768px) {
-        .bd-placeholder-img-lg {
-          font-size: 3.5rem;
-        }
-      }
-
-      .b-example-divider {
-        width: 100%;
-        height: 3rem;
-        background-color: rgba(0, 0, 0, .1);
-        border: solid rgba(0, 0, 0, .15);
-        border-width: 1px 0;
-        box-shadow: inset 0 .5em 1.5em rgba(0, 0, 0, .1), inset 0 .125em .5em rgba(0, 0, 0, .15);
-      }
-
-      .b-example-vr {
-        flex-shrink: 0;
-        width: 1.5rem;
-        height: 100vh;
-      }
-
-      .bi {
-        vertical-align: -.125em;
-        fill: currentColor;
-      }
-
-      .nav-scroller {
-        position: relative;
-        z-index: 2;
-        height: 2.75rem;
-        overflow-y: hidden;
-      }
-
-      .nav-scroller .nav {
-        display: flex;
-        flex-wrap: nowrap;
-        padding-bottom: 1rem;
-        margin-top: -1px;
-        overflow-x: auto;
-        text-align: center;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      .btn-bd-primary {
-        --bd-violet-bg: #ff0000;
-        --bd-violet-rgb: 112.520718, 44.062154, 249.437846;
-
-        --bs-btn-font-weight: 600;
-        --bs-btn-color: var(--bs-white);
-        --bs-btn-bg: var(--bd-violet-bg);
-        --bs-btn-border-color: var(--bd-violet-bg);
-        --bs-btn-hover-color: var(--bs-white);
-        --bs-btn-hover-bg: #6528e0;
-        --bs-btn-hover-border-color: #6528e0;
-        --bs-btn-focus-shadow-rgb: var(--bd-violet-rgb);
-        --bs-btn-active-color: var(--bs-btn-hover-color);
-        --bs-btn-active-bg: #5a23c8;
-        --bs-btn-active-border-color: #5a23c8;
-      }
-
-      .bd-mode-toggle {
-        z-index: 1500;
-      }
-
-      .bd-mode-toggle .dropdown-menu .active .bi {
-        display: block !important;
-      }
-    </style>
-
-    
-<main>
-  
-  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer">
-    {% with messages = get_flashed_messages(with_categories=True) %}
-        {% if messages %}
+  <body>
+    <main>
+      <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer">
+        {% with messages = get_flashed_messages(with_categories=True) %}
+          {% if messages %}
             {% for category, message in messages %}
-            <div class="toast align-items-center text-white bg-{{ category }} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true">
+              <div class="toast align-items-center text-white bg-{{ category }} border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true">
                 <div class="d-flex">
-                    <div class="toast-body">
-                        {{ message }}
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                  <div class="toast-body">
+                    {{ message }}
+                  </div>
+                  <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
-            </div>
+              </div>
             {% endfor %}
-        {% endif %}
-    {% endwith %}
-</div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    var toastElList = [].slice.call(document.querySelectorAll('.toast'));
-    var toastList = toastElList.map(function(toastEl) {
-      return new bootstrap.Toast(toastEl);
-    });
-    toastList.forEach(toast => toast.show());
-  });
-</script>
-
-
-<!-- Navbar -->
-
-<header class="p-3 mb-3 border-bottom">
-  <div class="container">
-   
-      </a>
-      <div class="container">
-        <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
-          <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
-            <svg class="bi me-2" width="40" height="32"><use xlink:href="#bootstrap"/></svg>
-            <span class="fs-4">F1 Tracker</span>
-          </a>
-    
-          <ul class="nav nav-pills">
-            <li class="nav-item"><a href="#" class="nav-link">Home</a></li>
-            <li class="nav-item"><a href="#" class="nav-link">Data</a></li>
-            <li class="nav-item"><a href="#" class="nav-link">Predictions</a></li>
-          </ul>
-    {% if data.signedin %}
-      <div class="dropdown text-end">
-        <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-          <img src="https://avatars.githubusercontent.com/u/78361326?s=96&v=4" alt="mdo" width="32" height="32" class="rounded-circle">
-        </a>
-        <ul class="dropdown-menu text-small">
-
-          {% if data.isadmin %}
-          <li><a class="dropdown-item" href="{{ url_for('admin_terminal') }}">Admin Terminal</a></li>
-          <li><hr class="dropdown-divider"></li>
           {% endif %}
-          
-          <li><a class="dropdown-item" href="{{ url_for('settings') }}">Settings</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="{{ url_for('logout') }}">Sign out</a></li>
-        </ul>
+        {% endwith %}
       </div>
-      {% else %}
 
-      <div class="dropdown text-end">
-        <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-          <img src="https://t3.ftcdn.net/jpg/05/70/71/06/360_F_570710660_Jana1ujcJyQTiT2rIzvfmyXzXamVcby8.jpg" alt="mdo" width="32" height="32" class="rounded-circle">
-        </a>
-        <ul class="dropdown-menu text-small">
-          <li><a class="dropdown-item" href="{{ url_for('login') }}">Sign in</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="{{ url_for('register') }}">Register</a></li>
-        </ul>
-        </ul>
-      {% endif %}
-      </div>
-    </div>
-  </div>
-</header>
+<!-- Nav Bar -->
+      <header class="p-3 mb-3 border-bottom">
+        <div class="container">
+          <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
+            <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
+              <span class="fs-4">F1 Tracker</span>
+            </a>
 
-<!-- First Section-->
+            <ul class="nav nav-pills">
+              <li class="nav-item"><a href="#" class="nav-link">Home</a></li>
+              <li class="nav-item"><a href="#" class="nav-link">Data</a></li>
+              <li class="nav-item"><a href="#" class="nav-link">Predictions</a></li>
+            </ul>
+            {% if data.signedin %}
+              <div class="dropdown text-end">
+                <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                  <img src="https://avatars.githubusercontent.com/u/78361326?s=96&v=4" alt="mdo" width="32" height="32" class="rounded-circle">
+                </a>
+                <ul class="dropdown-menu text-small">
+                  {% if data.isadmin %}
+                    <li><a class="dropdown-item" href="{{ url_for('admin_terminal') }}">Admin Terminal</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                  {% endif %}
+                  <li><a class="dropdown-item" href="{{ url_for('settings') }}">Settings</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="{{ url_for('logout') }}">Sign out</a></li>
+                </ul>
+              </div>
+            {% else %}
+              <div class="dropdown text-end">
+                <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                  <img src="https://t3.ftcdn.net/jpg/05/70/71/06/360_F_570710660_Jana1ujcJyQTiT2rIzvfmyXzXamVcby8.jpg" alt="mdo" width="32" height="32" class="rounded-circle">
+                </a>
+                <ul class="dropdown-menu text-small">
+                  <li><a class="dropdown-item" href="{{ url_for('login') }}">Sign in</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="{{ url_for('register') }}">Register</a></li>
+                </ul>
+              </div>
+            {% endif %}
+          </header>
+        </div>
+      </header>
+<!-- Recommendations -->
 
-<div id="recommendations">
-  <h2>Recommended Graphs</h2>
-  <div class="carousel">
-      {% if recommendations %}
-          <div class="carousel-item">
-              <h3>Most Viewed: {{ recommendations.most_viewed.displayTypeID }}</h3>
-              <!-- You can replace this with the actual graph or a link to the graph -->
-          </div>
-          <div class="carousel-item">
-              <h3>Your Favorite Driver: {{ recommendations.user_favorite_driver.displayTypeID }}</h3>
-          </div>
-          <div class="carousel-item">
-              <h3>Another Recommendation: {{ recommendations.additional.displayTypeID }}</h3>
-          </div>
-      {% else %}
-          <p>No recommendations available at this time.</p>
-      {% endif %}
-  </div>
-</div>
+      <h2>Recommended Graphs</h2>
+      <ul>
+          {% for recommendation in graph_recommendations %}
+              <li>
+                  <a href="{{ url_for('generate_graph', graphType=recommendation.graph_type, grandPrix=recommendation.grand_prix) }}">
+                      {{ recommendation.graph_type }} for {{ recommendation.grand_prix }}
+                  </a>
+              </li>
+          {% endfor %}
+      </ul>
 
-  <div class="row">
-      <div class="col-md-12 themed-grid-col">
+<!-- Upcoming Grand Prix-->
+      <div class="row">
+        <div class="col-md-12 themed-grid-col">
           <h2>Upcoming Grand Prix</h2>
           <ul class="list-group">
-              {% for item in data.upcominggrandprixlist %}
+            {% for item in data.upcominggrandprixlist %}
               <li class="list-group-item">{{ item }}</li>
-              {% endfor %}
-          </ul>
-      </div>
-  </div>
-</div>
-
-  
-<!-- Second Section -->
-<div class="container-fluid">
-  <div class="row mb-3">
-      <div class="col-md-8 themed-grid-col">Graph
-        <div class="graph-container text-center">
-          <img id="graphImage" src="../static/assets/images/graph_placeholder.png" alt="Graph will appear here" class="img-fluid" style="max-width: 100%; height: auto;">
-        </div>
-      </div>
-
-      <div class="col-md-4 themed-grid-col">Dropdowns
-        <!-- Dropdown for Graph Type -->
-        <div class="dropdown mb-3">
-          <button id="graphTypeButton" class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Select Graph Type
-          </button>
-          <ul class="dropdown-menu">
-            {% for graphtype in data.graphtypes %}
-              <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); updateDropdownText('graphTypeButton', '{{ graphtype }}')">{{ graphtype }}</a></li>
             {% endfor %}
           </ul>
         </div>
+      </div>
 
-        <!-- Dropdown for Grand Prix -->
-        <div class="dropdown mb-3">
-          <button id="grandPrixButton" class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Select Grand Prix
-          </button>
-          <ul class="dropdown-menu">
-            {% for gp in data.grandprixlist %}
-              <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); updateDropdownText('grandPrixButton', '{{ gp }}')">{{ gp }}</a></li>
-            {% endfor %}
-          </ul>
-        </div>
+<!-- Graphs/F1 Data -->
+      <div class="container-fluid">
+        <div class="row mb-3">
+          <div class="col-md-8 themed-grid-col">Graph
+            <div class="graph-container text-center">
+              <img id="graphImage" src="../static/assets/images/graph_placeholder.png" alt="Graph will appear here" class="img-fluid" style="max-width: 100%; height: auto;">
+            </div>
+          </div>
 
-        <!-- Generate Graph Button placed here -->
-        <div class="mb-3">
-          <button id="generateGraphButton" class="btn btn-primary" onclick="generateGraph()">Generate Graph</button>
+          <div class="col-md-4 themed-grid-col">Dropdowns
+            <div class="dropdown mb-3">
+              <button id="graphTypeButton" class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Select Graph Type
+              </button>
+              <ul class="dropdown-menu">
+                {% for graphtype in data.graphtypes %}
+                  <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); updateDropdownText('graphTypeButton', '{{ graphtype }}')">{{ graphtype }}</a></li>
+                {% endfor %}
+              </ul>
+            </div>
+
+            <div class="dropdown mb-3">
+              <button id="grandPrixButton" class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Select Grand Prix
+              </button>
+              <ul class="dropdown-menu">
+                {% for gp in data.grandprixlist %}
+                  <li><a class="dropdown-item" href="#" onclick="event.preventDefault(); updateDropdownText('grandPrixButton', '{{ gp }}')">{{ gp }}</a></li>
+                {% endfor %}
+              </ul>
+            </div>
+
+            <div class="mb-3">
+              <button id="generateGraphButton" class="btn btn-primary" onclick="generateGraph()">Generate Graph</button>
+            </div>
+          </div>
         </div>
       </div>
-  </div>
-</div>
-
-
-<!-- Third Section -->
-
-<div class="container-fluid">
-  <div class="row">
-      <div class="col themed-grid-col">
-          <h4>Race Prediction</h4>
-          <table class="table">
+<!-- Predictions + F1Data for Quali and Practise-->
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col themed-grid-col">
+            <h4>Race Prediction</h4>
+            <table class="table">
               <thead>
-                  <tr>
-                      <th scope="col">#</th>
-                      <th scope="col">Driver</th>
-                      
-                  </tr>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Driver</th>
+                </tr>
               </thead>
               <tbody>
-                  {% for row in data.driverrankingsrace %}
+                {% for row in data.driverrankingsrace %}
                   <tr>
-                      <th scope="row">{{ row.rank }}</th>
-                      <td>{{ row.driver }}</td>
+                    <th scope="row">{{ row.rank }}</th>
+                    <td>{{ row.driver }}</td>
                   </tr>
-                  {% endfor %}
+                {% endfor %}
               </tbody>
-          </table>
-          <div class="row">
-            <div class="col text-center"> 
+            </table>
+            <div class="row">
+              <div class="col text-center">
                 <button type="button" class="btn btn-primary">
-                    Prediction Certaincy <span class="badge text-bg-secondary">{{ data.predictionaccuracy }}</span>
+                  Prediction Certainty <span class="badge text-bg-secondary">{{ data.predictionaccuracy }}</span>
                 </button>
+              </div>
             </div>
+          </div>
+
+          <div class="col themed-grid-col">
+            <h4>Quali Results</h4>
+            <ul class="list-group">
+              {% for item in data.qualiresults %}
+                <li class="list-group-item">{{ item }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <div class="col themed-grid-col">
+            <h4>Practice Results</h4>
+            <ul class="list-group">
+              {% for item in data.practiseresults %}
+                <li class="list-group-item">{{ item }}</li>
+              {% endfor %}
+            </ul>
+          </div>
         </div>
       </div>
-
-      <div class="col themed-grid-col">
-          <h4>Quali Results</h4>
-          <ul class="list-group">
-              {% for item in data.qualiresults %}
-              <li class="list-group-item">{{ item }}</li>
-              {% endfor %}
-          </ul>
-      </div>
-
-      <div class="col themed-grid-col">
-          <h4>Practice Results</h4>
-          <ul class="list-group">
-              {% for item in data.practiseresults %}
-              <li class="list-group-item">{{ item }}</li>
-              {% endfor %}
-          </ul>
-      </div>
-  </div>
-
-  
-</div>
-
+    </main>
+  </body>
+</html>

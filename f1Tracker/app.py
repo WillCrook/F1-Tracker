@@ -61,12 +61,6 @@ def db_init():
     app.logger.info("Database Initalised")
     return 'OK Database Initalised'
 
-"""
-LOGIN / LOGOUT
-reference : https://flask.palletsprojects.com/en/3.0.x/quickstart/#sessions
-refactor : https://flask.palletsprojects.com/en/3.0.x/tutorial/views/#the-first-view-register
-
-"""
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     incorrectPass = False
@@ -95,7 +89,6 @@ def login():
         
     if request.method == 'GET':
         return render_template('login.html', incorrectpass=incorrectPass)
-
 
 @app.route('/twoFA', methods=['POST'])
 def twoFA():
@@ -501,23 +494,6 @@ def merge(left, right, key):
 def getUpcomingGrandPrixInfo():
     return f1_data.get_upcoming_grand_prix_info()
 
-def personalisedData():
-    return [
-        {
-            "dataTitle": 'Tyre Wear',
-            "driver" : "See how Charles Leclerc performed"
-         
-         },
-         {
-             "dataTitle": 'Race Pace',
-             "driver" : "See how Lewis Hamilton performed"
-         },
-         {
-             "dataTitle": "Braking Performance",
-             "driver": "See how Lando Norris performed"
-         }   
-    ]
-
 #Cache again used otherwise the processing would be through the roof
 
 @cache.cached(timeout=3600, key_prefix='driver_rankings_quali')
@@ -529,13 +505,21 @@ def qualiResults():
     return [
         "Top Speed: Charles Leclerc"
     ]
-@cache.cached(timeout=3600, key_prefix='generate_graph')
+@cache.cached(timeout=3600, key_prefix='generate-graph')
 @app.route('/generate-graph', methods=['GET'])
 def generate_graph():
     graph_type = request.args.get('graphType')
     grand_prix = request.args.get('grandPrix')
 
-    #flash messages now in the html so that they display without refreshing the page and hitting the route
+    # Increment view count for the selected graph type
+    db.get_db().execute('''
+        INSERT INTO displayData (displayTypeID, driverID, views)
+        VALUES (?, ?, 1)
+        ON CONFLICT(displayTypeID, driverID) 
+        DO UPDATE SET views = views + 1;
+    ''', [graph_type, None])
+    db.get_db().commit()
+
 
     # Based on the selected graph type and Grand Prix, generate the appropriate graph
     if graph_type == "Position Changed during a Race":
@@ -580,6 +564,33 @@ def practiseResults():
         "Fastest Sector 2: Charles Leclerc - 27.010",
         "Fastest Sector 3: Charles Leclerc - 26.080"
     ]
+def get_most_viewed_graph():
+    query = '''
+    SELECT displayTypeID 
+    FROM displayData
+    GROUP BY displayTypeID
+    ORDER BY SUM(views) DESC
+    LIMIT 1
+    '''
+    result = db.query_db(query, one=True)
+    return result['displayTypeID'] if result else None
+
+def get_graph_recommendations():
+    most_viewed_graph = get_most_viewed_graph()
+    recommendations = []
+    
+    if most_viewed_graph:
+        # Get the list of events (Grand Prix)
+        events = f1_data.get_events()
+        
+        # Recommend the most viewed graph type with some Grand Prix options
+        for grand_prix in events[:3]:  # Adjust as needed to pick which events to show
+            recommendations.append({
+                "graph_type": most_viewed_graph,
+                "grand_prix": grand_prix
+            })
+    
+    return recommendations
 
 def getSignedIn():
     try:
@@ -588,46 +599,6 @@ def getSignedIn():
     except:
         return False
     
-def getRecommendations(user_id):
-    
-    # Recommendation 1: Most viewed graphs
-    most_viewed_query = '''
-    SELECT displayTypeID, COUNT(*) AS views 
-    FROM displayData 
-    GROUP BY displayTypeID 
-    ORDER BY views DESC 
-    LIMIT 1;  -- Adjust the LIMIT as needed
-    '''
-    most_viewed = db.get_db().execute(most_viewed_query).fetchone()
-
-    # Recommendation 2: Graph based on user's favorite driver
-    # Assuming `driverID` is stored in the users table and the user has a favorite driver
-    user_favorite_driver_query = '''
-    SELECT displayTypeID 
-    FROM displayData 
-    WHERE driverID = (SELECT driverID FROM users WHERE userID = ?)
-    LIMIT 1;  -- Adjust the LIMIT as needed
-    '''
-    user_favorite_driver = db.get_db().execute(user_favorite_driver_query, (user_id,)).fetchone()
-
-    # Recommendation 3: Example additional recommendation
-    additional_recommendation_query = '''
-    SELECT displayTypeID 
-    FROM displayData 
-    ORDER BY RANDOM() 
-    LIMIT 1;  -- Randomly select another recommendation
-    '''
-    additional_recommendation = db.get_db().execute(additional_recommendation_query).fetchone()
-
-    # Collect recommendations
-    recommendations = {
-        'most_viewed': most_viewed,
-        'user_favorite_driver': user_favorite_driver,
-        'additional': additional_recommendation
-    }
-
-    return recommendations
-
 @app.route('/send-newsletter')
 def send_newsletter():
     try:
@@ -673,12 +644,8 @@ def send_newsletter():
 
 def get_payload():
     user_id = session.get('user_id')  # Assuming user ID is stored in session after login
-    recommendations = None
-    if user_id:
-        recommendations = getRecommendations(user_id)
 
     payload = {
-        'highlights' : personalisedData(), # db
         'qualiresults': qualiResults(), # api
         'driverrankingsrace': driverRankingsRace()[0], # db / ML
         'upcominggrandprixlist': getUpcomingGrandPrixInfo(), # api 
@@ -687,8 +654,8 @@ def get_payload():
         'signedin' : getSignedIn(), #session
         'graphtypes': getGraphTypes(), #f1data
         'grandprixlist': f1_data.get_events(),  # Grand Prix events from f1data.py
-        'recommendations': recommendations,
-        'isadmin' : get_admin() 
+        'isadmin' : get_admin(), 
+        'graph_recommendations' : get_graph_recommendations()
     }
 
     return payload
