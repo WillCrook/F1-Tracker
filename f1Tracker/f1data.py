@@ -422,7 +422,7 @@ class F1Data:
         #Check to see if there is an upcoming Grand Prix
         if not self.upcoming_event:
             logger.error("No upcoming event available.")
-            return ["Error retrieving upcoming Grand Prix info"]
+            return ["No Upcoming Grand Prix"]
 
         try:
             upcoming_event = self.upcoming_event

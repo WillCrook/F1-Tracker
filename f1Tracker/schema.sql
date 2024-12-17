@@ -43,6 +43,8 @@ CREATE TABLE predictions (
 CREATE TABLE predictedDriverPos (
   predictionID INTEGER,
   driverID INTEGER,
+  predictedPosition INTEGER,
+  actualPosition INTEGER,
   PRIMARY KEY (predictionID, driverID),
   FOREIGN KEY (predictionID) REFERENCES predictions(predictionID),
   FOREIGN KEY (driverID) REFERENCES drivers(driverID)
@@ -51,8 +53,9 @@ CREATE TABLE predictedDriverPos (
 CREATE TABLE displayData (
   displayTypeID TEXT,
   driverID INTEGER,
+  grandPrix TEXT,
   views INTEGER, -- Specify the type for 'views' column
-  PRIMARY KEY (displayTypeID, driverID),
+  PRIMARY KEY (displayTypeID, grandPrix),
   FOREIGN KEY (driverID) REFERENCES drivers(driverID)
 );
 

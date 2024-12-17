@@ -140,9 +140,9 @@
       </header>
 <!-- Recommendations -->
 
-      <h2>Recommended Graphs</h2>
+      <h2>Recommendations</h2>
       <ul>
-          {% for recommendation in graph_recommendations %}
+          {% for recommendation in data.graph_recommendations %}
               <li>
                   <a href="{{ url_for('generate_graph', graphType=recommendation.graph_type, grandPrix=recommendation.grand_prix) }}">
                       {{ recommendation.graph_type }} for {{ recommendation.grand_prix }}

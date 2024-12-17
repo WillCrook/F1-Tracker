@@ -513,13 +513,12 @@ def generate_graph():
 
     # Increment view count for the selected graph type
     db.get_db().execute('''
-        INSERT INTO displayData (displayTypeID, driverID, views)
-        VALUES (?, ?, 1)
-        ON CONFLICT(displayTypeID, driverID) 
+        INSERT INTO displayData (displayTypeID, driverID, grandPrix, views)
+        VALUES (?, ?, ?, 1)
+        ON CONFLICT(displayTypeID, grandPrix)
         DO UPDATE SET views = views + 1;
-    ''', [graph_type, None])
+    ''', [graph_type, None, grand_prix])
     db.get_db().commit()
-
 
     # Based on the selected graph type and Grand Prix, generate the appropriate graph
     if graph_type == "Position Changed during a Race":
@@ -564,31 +563,26 @@ def practiseResults():
         "Fastest Sector 2: Charles Leclerc - 27.010",
         "Fastest Sector 3: Charles Leclerc - 26.080"
     ]
-def get_most_viewed_graph():
+def get_most_viewed_graphs(number_of_recomendations):
     query = '''
-    SELECT displayTypeID 
+    SELECT displayTypeID, grandPrix, SUM(views) AS total_views
     FROM displayData
-    GROUP BY displayTypeID
-    ORDER BY SUM(views) DESC
-    LIMIT 1
+    GROUP BY displayTypeID, grandPrix
+    ORDER BY total_views DESC
+    LIMIT ?
     '''
-    result = db.query_db(query, one=True)
-    return result['displayTypeID'] if result else None
+    result = db.query_db(query, [number_of_recomendations])
+    return result if result else []
 
-def get_graph_recommendations():
-    most_viewed_graph = get_most_viewed_graph()
+def get_graph_recommendations(number_of_recomendations):
+    most_viewed_graphs = get_most_viewed_graphs(number_of_recomendations)
     recommendations = []
-    
-    if most_viewed_graph:
-        # Get the list of events (Grand Prix)
-        events = f1_data.get_events()
-        
-        # Recommend the most viewed graph type with some Grand Prix options
-        for grand_prix in events[:3]:  # Adjust as needed to pick which events to show
-            recommendations.append({
-                "graph_type": most_viewed_graph,
-                "grand_prix": grand_prix
-            })
+
+    for graph in most_viewed_graphs:
+        recommendations.append({
+            "graph_type": graph['displayTypeID'],
+            "grand_prix": graph['grandPrix']
+        })
     
     return recommendations
 
@@ -655,7 +649,7 @@ def get_payload():
         'graphtypes': getGraphTypes(), #f1data
         'grandprixlist': f1_data.get_events(),  # Grand Prix events from f1data.py
         'isadmin' : get_admin(), 
-        'graph_recommendations' : get_graph_recommendations()
+        'graph_recommendations' : get_graph_recommendations(3)
     }
 
     return payload
