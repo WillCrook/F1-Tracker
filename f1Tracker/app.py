@@ -242,7 +242,7 @@ def verify():
             db.get_db().execute(
                 'UPDATE users SET verified = 1 WHERE email = ?', [email])
             db.get_db().commit()
-            flash('Registration successful! You can now log in.', 'success')
+            flash('Registration successful!', 'success')
             return redirect(url_for('home'))
         else:
             flash('Invalid verification code. Please try again.')
