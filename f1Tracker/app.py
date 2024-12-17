@@ -26,7 +26,6 @@ app.config['MAIL_PASSWORD'] = os.getenv('GMAIL_PASSWORD')  # Stored in environme
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('GMAIL_USERNAME') # Stored in environment file
 mail = Mail(app)
 
-
 cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})  # Use SimpleCache for in-memory caching
 
 # App secret key - set using python -c 'import secrets; print(secrets.token_hex())'
