@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 app = Flask(__name__)
 
 #Load hidden variables from env file
-load_dotenv("/Users/willcrook/repo/f1-tracker/f1Tracker/environmentVariables.env")
+load_dotenv("/Users/willcrook/repo/f1-tracker/environmentVariables.env")
 
 #Setup App Email 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'  #Set Gmail

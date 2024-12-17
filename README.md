@@ -9,7 +9,7 @@ python3 -m pip install -r requirements.txt
 python -c 'import secrets; print(secrets.token_hex())'
 
 ```
-### Setup environment variables
+## Setup environment variables
 ```
 create.env file 
 add variables required into that and save
@@ -23,7 +23,11 @@ git commit -a -m 'db'
 git push
 ```
 
+## Git Clone
+```
+git clone git@gitlab.com:william23/f1-tracker.git
 
+```
 ## Starting Flask App
 
 flask --app f1Tracker.app run --debug

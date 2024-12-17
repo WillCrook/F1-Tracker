@@ -1,20 +1,10 @@
-
-import numpy as np #linear algebra
-import pandas as pd #data processing, CSV file I/O (e.g. pd.read_csv)
-from scipy.stats import pearsonr
+import numpy as np
+import pandas as pd
 from matplotlib import pyplot
 import xgboost as xgb
 from loguru import logger
-from sklearn.naive_bayes import MultinomialNB
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import accuracy_score, classification_report
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
-import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset
 import warnings
 import requests, zipfile, io
 
