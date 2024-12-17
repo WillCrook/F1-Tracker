@@ -83,7 +83,7 @@ def login():
         session['verification_token'] = token
         session['email'] = request.form['email']  #Store email in session for verification
         send_verification_email(request.form['email'], token)
-
+        flash("2FA Code Sent to Email!", 'success')
         return render_template('twoFA.html')  #Render a page to input verification code
         
     if request.method == 'GET':
@@ -406,6 +406,12 @@ def admin_terminal():
         elif action == 'delete_user' and admin_permissions >= 3:
             delete_user(user_id)
             flash("User account deleted!", "danger")
+
+        elif action == 'clear_recommendations' and admin_permissions >= 2:
+            #Clears Recommendations
+            query = "DELETE FROM displayData"
+            db.query_db(query)
+            db.get_db().commit()
 
         else:
             flash("You do not have permission to perform this action.", "danger")
