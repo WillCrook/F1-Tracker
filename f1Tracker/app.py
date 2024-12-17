@@ -401,7 +401,7 @@ def admin_terminal():
 
         elif action == 'remove_admin' and admin_permissions >= 3:
             remove_admin(user_id)
-            flash("User removed from admins!", "info")
+            flash("User removed from admins!", "success")
 
         elif action == 'delete_user' and admin_permissions >= 3:
             delete_user(user_id)
@@ -412,6 +412,7 @@ def admin_terminal():
             query = "DELETE FROM displayData"
             db.query_db(query)
             db.get_db().commit()
+            flash("Recommendations successfully cleared", "success")
 
         else:
             flash("You do not have permission to perform this action.", "danger")
