@@ -5,97 +5,142 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <title>Settings - F1 Tracker</title>
+    <style>
+        body {
+            background-color: #000000; /* Black background */
+            color: #f8f9fa; /* Light text */
+        }
+        .settings-container {
+            max-width: 600px; /* Increased width */
+            margin: auto;
+            padding: 2rem;
+            background: #1c1c1c; /* Dark grey background for the form */
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .form-label, .small, .text-muted {
+            color: #f8f9fa; /* Light text for labels and links */
+        }
+        .btn-primary {
+            background-color: #dc3545; /* Red button */
+            border-color: #dc3545;
+        }
+        .btn-primary:hover {
+            background-color: #c82333; /* Darker red on hover */
+            border-color: #bd2130;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+        }
+        
+
+        
+    </style>
 </head>
 <body class="py-4">
-    <div class="container">
-        <h1 class="mb-4">Settings</h1>
+    <div class="container d-flex justify-content-center align-items-center vh-100">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="settings-container">
+                <h1 class="mb-4 text-center">Settings</h1>
 
-        <!-- Flash messages for feedback -->
-        {% with messages = get_flashed_messages(with_categories=True) %}
-            {% if messages %}
-                <div class="alert alert-success" role="alert">
-                    {{ messages[0][1] }}
-                </div>
-            {% endif %}
-        {% endwith %}
+                <!-- Settings form -->
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="firstName" class="form-label">First Name</label>
+                        <input type="text" class="form-control rounded-pill" id="firstName" name="firstName" value="{{ user.firstName }}" required>
+                    </div>
 
-        <!-- Settings form -->
-        <form method="POST">
-            <div class="mb-3">
-                <label for="firstName" class="form-label">First Name</label>
-                <input type="text" class="form-control" id="firstName" name="firstName" value="{{ user.firstName }}" required>
-            </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control rounded-pill" id="email" name="email" value="{{ user.email }}" disabled>
+                    </div>
 
-            <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" disabled>
-            </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password (Leave blank to keep unchanged)</label>
+                        <input type="password" class="form-control rounded-pill" id="password" name="password">
+                    </div>
 
-            <div class="mb-3">
-                <label for="password" class="form-label">Password (Leave blank to keep unchanged)</label>
-                <input type="password" class="form-control" id="password" name="password">
-            </div>
+                    <div class="mb-3">
+                        <label for="driver" class="form-label">Favourite Driver</label>
+                        <select class="form-select rounded-pill" id="driver" name="driver" required>
+                            <option value="" disabled>Select your favourite driver</option>
+                            {% for driver in drivers %}
+                                <option value="{{ driver.driverID }}" {% if driver.driverID == user.driverID %}selected{% endif %}>
+                                    {{ driver.driverName }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-            <div class="mb-3">
-                <label for="driver" class="form-label">Favourite Driver</label>
-                <select class="form-select" id="driver" name="driver" required>
-                    <option value="" disabled>Select your favourite driver</option>
-                    {% for driver in drivers %}
-                        <option value="{{ driver.driverID }}" {% if driver.driverID == user.driverID %}selected{% endif %}>
-                            {{ driver.driverName }}
-                        </option>
+                    <div class="mb-3">
+                        <label for="team" class="form-label">Favourite Team</label>
+                        <select class="form-select rounded-pill" id="team" name="team" required>
+                            <option value="" disabled>Select your favourite team</option>
+                            {% for team in teams %}
+                                <option value="{{ team.teamID }}" {% if team.teamID == user.teamID %}selected{% endif %}>
+                                    {{ team.teamName }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="newsletter" name="newsletter" value="1" {% if user.newsletter == 1 %}checked{% endif %}>
+                        <label class="form-check-label" for="newsletter">Subscribe to Newsletter</label>
+                    </div>
+
+                   <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="mb-3">
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                     {% endfor %}
-                </select>
-            </div>
+                </div>
+                {% endif %}
+            {% endwith %}
 
-            <div class="mb-3">
-                <label for="team" class="form-label">Favourite Team</label>
-                <select class="form-select" id="team" name="team" required>
-                    <option value="" disabled>Select your favourite team</option>
-                    {% for team in teams %}
-                        <option value="{{ team.teamID }}" {% if team.teamID == user.teamID %}selected{% endif %}>
-                            {{ team.teamName }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
+                    <button type="submit" class="btn btn-success rounded-pill w-100">Save Changes</button>
+                </form>
 
-            <div class="mb-3 form-check">
-                <input type="checkbox" class="form-check-input" id="newsletter" name="newsletter" value="1" {% if user.newsletter == 1 %}checked{% endif %}>
-                <label class="form-check-label" for="newsletter">Subscribe to Newsletter</label>
-            </div>
+                <hr>
 
-            <button type="submit" class="btn btn-primary">Save Changes</button>
-        </form>
+                <!-- Delete Account Button with Modal -->
+                <button class="btn btn-danger mt-3 w-100" data-bs-toggle="modal" data-bs-target="#deleteModal">Delete Account</button>
 
-        <hr>
-
-        <!-- Delete Account Button with Modal -->
-        <button class="btn btn-danger mt-3" data-bs-toggle="modal" data-bs-target="#deleteModal">Delete Account</button>
-
-        <!-- Modal for Account Deletion Confirmation -->
-        <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="deleteModalLabel">Confirm Account Deletion</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        Are you sure you want to delete your account? This action is irreversible.
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <form method="POST" action="{{ url_for('delete_account') }}">
-                            <button type="submit" class="btn btn-danger">Delete My Account</button>
-                        </form>
+                <!-- Modal for Account Deletion Confirmation -->
+                <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="deleteModalLabel">Confirm Account Deletion</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                Are you sure you want to delete your account? This action is irreversible.
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <form method="POST" action="{{ url_for('delete_account') }}">
+                                    <button type="submit" class="btn btn-danger">Delete My Account</button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Back to Home Button -->
+                <a href="{{ url_for('home') }}" class="btn btn-secondary mt-4 w-100">Back to Home</a>
             </div>
         </div>
-
-        <!-- Back to Home Button -->
-        <a href="{{ url_for('home') }}" class="btn btn-secondary mt-4">Back to Home</a>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

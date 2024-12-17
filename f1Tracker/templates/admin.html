@@ -5,9 +5,102 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Terminal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Custom Styles for Full Black Page */
+        html, body {
+            height: 100%;
+            background-color: #000000; /* Full black page background */
+        }
+
+        .container {
+            background-color: #333333; /* Dark grey background for containers */
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 50px;
+        }
+
+        h1, .card-title {
+            color: #ffffff; /* White titles */
+        }
+
+        .card {
+            background-color: #444444; /* Grey background for cards */
+            color: #f8f9fa;
+            border: none;
+        }
+
+        .btn-primary, .btn-success, .btn-danger {
+            background-color: #28a745; /* Green buttons */
+            border-color: #28a745;
+        }
+
+        .btn-primary:hover, .btn-success:hover, .btn-danger:hover {
+            background-color: #218838; /* Darker green on hover */
+            border-color: #1e7e34;
+        }
+
+        .btn-danger {
+            background-color: #dc3545; /* Red for remove and delete buttons */
+            border-color: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333; /* Darker red on hover */
+            border-color: #bd2130;
+        }
+
+        .btn-primary {
+            background-color: #007bff; /* Blue for Send Newsletter button */
+            border-color: #007bff;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3; /* Darker blue on hover */
+            border-color: #004085;
+        }
+
+        .alert-success {
+            background-color: #28a745; /* Green for success messages */
+            color: white;
+        }
+
+        .alert-danger {
+            background-color: #dc3545; /* Red for error messages */
+            color: white;
+        }
+
+        .badge-success {
+            background-color: #28a745; /* Green badge */
+        }
+
+        .badge-warning {
+            background-color: #ffc107; /* Yellow badge */
+        }
+
+        .badge-secondary {
+            background-color: #6c757d; /* Grey badge */
+        }
+
+        .btn-close {
+            background-color: #f8f9fa;
+        }
+
+        /* Style for Clear Recommendations section */
+        .clear-recommendations {
+            background-color: #444444; /* Same grey style as other sections */
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .clear-recommendations h4 {
+            color: #ffffff;
+        }
+
+    </style>
 </head>
-<body class="bg-light">
-    <div class="container mt-5">
+<body>
+    <div class="container">
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>Admin Terminal</h1>
@@ -48,6 +141,21 @@
                 <form method="post">
                     <button type="submit" name="action" value="send_newsletter" class="btn btn-primary">
                         Send Newsletter
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Clear Recommendations Section (Level 2 Admin) -->
+        {% if admin_permissions >= 2 %}
+        <div class="card mb-4">
+            <div class="clear-recommendations">
+                <h4>Clear Recommendations</h4>
+                <p>Clear all the recommendations from the database</p>
+                <form method="post">
+                    <button type="submit" name="action" value="clear_recommendations" class="btn btn-danger">
+                        Clear Recommendations
                     </button>
                 </form>
             </div>

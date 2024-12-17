@@ -11,7 +11,7 @@
             color: #f8f9fa; /* Light text */
         }
         .register-container {
-            max-width: 400px;
+            max-width: 800px;
             margin: auto;
             padding: 2rem;
             background: #1c1c1c; /* Dark grey background for the form */
@@ -45,107 +45,109 @@
 </head>
 <body>
     <div class="container d-flex justify-content-center align-items-center vh-100">
-        <div class="register-container">
-            <!-- Logo and Welcome Text -->
-            <div class="text-center logo mb-4">
-                <a href="/">
-                    <img src="https://d3faj0w6aqatyx.cloudfront.net/uploads/2018/01/19151152/FORMULA-1%C2%AE-UNLEASHES-NEW-BRAND-IDENTITY-INSPIRED-BY-ITS-FANS-OPTION-2.jpg" 
-                         alt="Formula 1 Logo" class="rounded-circle">
-                </a>
-                <h1 class="h4 fw-bold mt-3">Register</h1>
-            </div>
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="register-container">
+                <!-- Logo and Welcome Text -->
+                <div class="text-center logo mb-4">
+                    <a href="/">
+                        <img src="https://d3faj0w6aqatyx.cloudfront.net/uploads/2018/01/19151152/FORMULA-1%C2%AE-UNLEASHES-NEW-BRAND-IDENTITY-INSPIRED-BY-ITS-FANS-OPTION-2.jpg" 
+                            alt="Formula 1 Logo" class="rounded-circle">
+                    </a>
+                    <h1 class="h4 fw-bold mt-3">Register</h1>
+                </div>
 
-            <!-- Flash Messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="mb-3">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Register Form -->
+                <form method="post">
+                    <!-- Email Field -->
                     <div class="mb-3">
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        {% endfor %}
+                        <label for="email" class="form-label">Email address</label>
+                        <input type="email" class="form-control rounded-pill" id="email" name="email" placeholder="name@example.com" required>
                     </div>
-                {% endif %}
-            {% endwith %}
 
-            <!-- Register Form -->
-            <form method="post">
-                <!-- Email Field -->
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email address</label>
-                    <input type="email" class="form-control rounded-pill" id="email" name="email" placeholder="name@example.com" required>
-                </div>
+                    <!-- First Name Field -->
+                    <div class="mb-3">
+                        <label for="firstName" class="form-label">First Name</label>
+                        <input type="text" class="form-control rounded-pill" id="firstName" name="firstName" placeholder="John Doe" required>
+                    </div>
 
-                <!-- First Name Field -->
-                <div class="mb-3">
-                    <label for="firstName" class="form-label">First Name</label>
-                    <input type="text" class="form-control rounded-pill" id="firstName" name="firstName" placeholder="John Doe" required>
-                </div>
+                    <!-- Password Field -->
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control rounded-pill" id="password" name="password" placeholder="Password" required>
+                    </div>
 
-                <!-- Password Field -->
-                <div class="mb-3">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" class="form-control rounded-pill" id="password" name="password" placeholder="Password" required>
-                </div>
+                    <!-- Favourite Driver Dropdown -->
+                    <div class="mb-3">
+                        <label for="driver" class="form-label">Favourite Driver</label>
+                        <select class="form-select rounded-pill" id="driver" name="driver" required>
+                            <option value="" disabled selected>Select Favourite Driver</option>
+                            <option value="1">Charles Leclerc</option>
+                            <option value="2">Max Verstappen</option>
+                            <option value="3">Lewis Hamilton</option>
+                            <option value="4">Lando Norris</option>
+                            <option value="5">Fernando Alonso</option>
+                            <option value="6">Oscar Piastri</option>
+                            <option value="7">George Russell</option>
+                            <option value="8">Carlos Sainz</option>
+                            <option value="9">Sergio Perez</option>
+                            <option value="10">Nico Hulkenberg</option>
+                            <option value="11">Daniel Ricciardo</option>
+                            <option value="12">Yuki Tsunoda</option>
+                            <option value="13">Kevin Magnussen</option>
+                            <option value="14">Alex Albon</option>
+                            <option value="15">Esteban Ocon</option>
+                            <option value="16">Zhou Guanyu</option>
+                            <option value="17">Lance Stroll</option>
+                            <option value="18">Valtteri Bottas</option>
+                            <option value="19">Franco Colapinto</option>
+                            <option value="20">Pierre Gasly</option>
+                        </select>
+                    </div>
 
-                <!-- Favourite Driver Dropdown -->
-                <div class="mb-3">
-                    <label for="driver" class="form-label">Favourite Driver</label>
-                    <select class="form-select rounded-pill" id="driver" name="driver" required>
-                        <option value="" disabled selected>Select Favourite Driver</option>
-                        <option value="1">Charles Leclerc</option>
-                        <option value="2">Max Verstappen</option>
-                        <option value="3">Lewis Hamilton</option>
-                        <option value="4">Lando Norris</option>
-                        <option value="5">Fernando Alonso</option>
-                        <option value="6">Oscar Piastri</option>
-                        <option value="7">George Russell</option>
-                        <option value="8">Carlos Sainz</option>
-                        <option value="9">Sergio Perez</option>
-                        <option value="10">Nico Hulkenberg</option>
-                        <option value="11">Daniel Ricciardo</option>
-                        <option value="12">Yuki Tsunoda</option>
-                        <option value="13">Kevin Magnussen</option>
-                        <option value="14">Alex Albon</option>
-                        <option value="15">Esteban Ocon</option>
-                        <option value="16">Zhou Guanyu</option>
-                        <option value="17">Lance Stroll</option>
-                        <option value="18">Valtteri Bottas</option>
-                        <option value="19">Franco Colapinto</option>
-                        <option value="20">Pierre Gasly</option>
-                    </select>
-                </div>
+                    <!-- Favourite Team Dropdown -->
+                    <div class="mb-3">
+                        <label for="team" class="form-label">Favourite Team</label>
+                        <select class="form-select rounded-pill" id="team" name="team" required>
+                            <option value="" disabled selected>Select Favourite Team</option>
+                            <option value="1">Ferrari</option>
+                            <option value="2">Red Bull</option>
+                            <option value="3">Mercedes</option>
+                            <option value="4">McLaren</option>
+                            <option value="5">Aston Martin</option>
+                            <option value="6">Alpine</option>
+                            <option value="7">RB</option>
+                            <option value="8">Sauber</option>
+                            <option value="9">Williams</option>
+                            <option value="10">Haas</option>
+                        </select>
+                    </div>
 
-                <!-- Favourite Team Dropdown -->
-                <div class="mb-3">
-                    <label for="team" class="form-label">Favourite Team</label>
-                    <select class="form-select rounded-pill" id="team" name="team" required>
-                        <option value="" disabled selected>Select Favourite Team</option>
-                        <option value="1">Ferrari</option>
-                        <option value="2">Red Bull</option>
-                        <option value="3">Mercedes</option>
-                        <option value="4">McLaren</option>
-                        <option value="5">Aston Martin</option>
-                        <option value="6">Alpine</option>
-                        <option value="7">RB</option>
-                        <option value="8">Sauber</option>
-                        <option value="9">Williams</option>
-                        <option value="10">Haas</option>
-                    </select>
-                </div>
+                    <!-- Newsletter Checkbox -->
+                    <div class="form-check text-start mb-3">
+                        <input class="form-check-input" type="checkbox" id="newsletter" name="newsletter">
+                        <label class="form-check-label" for="newsletter">Subscribe to newsletter</label>
+                    </div>
 
-                <!-- Newsletter Checkbox -->
-                <div class="form-check text-start mb-3">
-                    <input class="form-check-input" type="checkbox" id="newsletter" name="newsletter">
-                    <label class="form-check-label" for="newsletter">Subscribe to newsletter</label>
-                </div>
-
-                <!-- Register Button -->
-                <div class="d-grid mb-3">
-                    <button type="submit" class="btn btn-primary rounded-pill">Register</button>
-                </div>
-            </form>
+                    <!-- Register Button -->
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary rounded-pill">Register</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 

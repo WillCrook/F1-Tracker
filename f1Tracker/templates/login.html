@@ -11,7 +11,7 @@
             color: #f8f9fa; /* Light text */
         }
         .login-container {
-            max-width: 400px;
+            max-width: 600px; /* Increased width */
             margin: auto;
             padding: 2rem;
             background: #1c1c1c; /* Dark grey background for the form */
@@ -44,71 +44,74 @@
 </head>
 <body>
     <div class="container d-flex justify-content-center align-items-center vh-100">
-        <div class="login-container">
-            <!-- Logo and Welcome Text -->
-            <div class="text-center logo mb-4">
-                <a href="/">
-                    <img src="https://d3faj0w6aqatyx.cloudfront.net/uploads/2018/01/19151152/FORMULA-1%C2%AE-UNLEASHES-NEW-BRAND-IDENTITY-INSPIRED-BY-ITS-FANS-OPTION-2.jpg" 
-                         alt="Formula 1 Logo" class="rounded-circle">
-                </a>
-                <h1 class="h4 fw-bold mt-3">Sign In</h1>
-            </div>
-            <!-- Flash Messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                <div class="mb-3">
-                    {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
+        <div class="col-8 col-md-6 col-lg-4">
+            <div class="login-container">
+                <!-- Logo and Welcome Text -->
+                <div class="text-center logo mb-4">
+                    <a href="/">
+                        <img src="https://d3faj0w6aqatyx.cloudfront.net/uploads/2018/01/19151152/FORMULA-1%C2%AE-UNLEASHES-NEW-BRAND-IDENTITY-INSPIRED-BY-ITS-FANS-OPTION-2.jpg" 
+                             alt="Formula 1 Logo" class="rounded-circle">
+                    </a>
+                    <h1 class="h4 fw-bold mt-3">Sign In</h1>
+                </div>
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    <div class="mb-3">
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                {% endwith %}
+                
+                <!-- Login Form -->
+                <form method="post" action="/login">
+                    <!-- Email Field -->
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email address</label>
+                        <input type="email" class="form-control rounded-pill" id="email" name="email" placeholder="name@example.com" required>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control rounded-pill" id="password" name="password" placeholder="Password" required>
+                    </div>
+
+                    <!-- Error Messages -->
+                    {% if incorrectpass %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        Incorrect password! Please try again.
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-            {% endwith %}
-            <!-- Login Form -->
-            <form method="post" action="/login">
-                <!-- Email Field -->
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email address</label>
-                    <input type="email" class="form-control rounded-pill" id="email" name="email" placeholder="name@example.com" required>
-                </div>
+                    {% endif %}
+                    {% if invalidemail %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        Email not found. Please try again or register.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endif %}
 
-                <!-- Password Field -->
-                <div class="mb-3">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" class="form-control rounded-pill" id="password" name="password" placeholder="Password" required>
-                </div>
+                    <!-- Forgot Password & Remember Me -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <a href="{{ url_for('forgot_password') }}" class="small text-danger text-decoration-none">Forgot password?</a>
+                    </div>
 
-                <!-- Error Messages -->
-                {% if incorrectpass %}
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    Incorrect password! Please try again.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-                {% endif %}
-                {% if invalidemail %}
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    Email not found. Please try again or register.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-                {% endif %}
+                    <!-- Login Button -->
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary rounded-pill">Sign In</button>
+                    </div>
 
-                <!-- Forgot Password & Remember Me -->
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <a href="{{ url_for('forgot_password') }}" class="small text-danger text-decoration-none">Forgot password?</a>
-                </div>
-
-                <!-- Login Button -->
-                <div class="d-grid mb-3">
-                    <button type="submit" class="btn btn-primary rounded-pill">Sign In</button>
-                </div>
-
-                <!-- Register Link -->
-                <p class="text-center small">
-                    Don't have an account? <a href="{{ url_for('register') }}" class="text-danger text-decoration-none">Register now</a>
-                </p>
-            </form>
+                    <!-- Register Link -->
+                    <p class="text-center small">
+                        Don't have an account? <a href="{{ url_for('register') }}" class="text-danger text-decoration-none">Register now</a>
+                    </p>
+                </form>
+            </div>
         </div>
     </div>
 
