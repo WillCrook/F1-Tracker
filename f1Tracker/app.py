@@ -14,26 +14,22 @@ from datetime import datetime, timedelta, timezone
 
 app = Flask(__name__)
 
-#Load hidden variables from env file
-load_dotenv("/Users/willcrook/repo/f1-tracker/environmentVariables.env")
+#load hidden variables from env file
+load_dotenv("/Users/willcrook/Documents/repo/f1-tracker/environmentVariables.env")
 
-#Setup App Email 
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'  #Set Gmail
+#setup App Email 
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'  #using gmail api
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv('GMAIL_USERNAME')  # Stored in environment file
-app.config['MAIL_PASSWORD'] = os.getenv('GMAIL_PASSWORD')  # Stored in environment file
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('GMAIL_USERNAME') # Stored in environment file
+app.config['MAIL_USERNAME'] = os.getenv('GMAIL_USERNAME')  #stored in environment file
+app.config['MAIL_PASSWORD'] = os.getenv('GMAIL_PASSWORD')  #stored in environment file
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('GMAIL_USERNAME') #stored in environment file
 mail = Mail(app)
 
-cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})  # Use SimpleCache for in-memory caching
+cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'}) 
 
-# App secret key - set using python -c 'import secrets; print(secrets.token_hex())'
+#app secret key - set using python -c 'import secrets; print(secrets.token_hex())'
 app.secret_key = b'9417b2d7beab235eae274c28716b73e3c06fcb9a898bd4a930301cc4c3a2df9d'
-
-# @app.teardown_appcontext
-# def teardown_app():
-#     db.close_connection()
 
 signedIn = False
 f1_data = f1data.F1Data()
@@ -45,14 +41,6 @@ def send_verification_email(email, token):
 
 def generate_token():
     return secrets.token_hex(3)
-
-def test_request_example(client):
-    response = client.get("/posts")
-    assert b"<h2>Hello, World!</h2>" in response.data
-
-@app.route("/helloworld")
-def hello_world():
-    return "<p>Hello, World!</p>"
 
 @app.route("/db_init")
 def db_init():
@@ -78,13 +66,13 @@ def login():
         session['email'] = request.form['email']
         app.logger.info(f"user {session['email']} logged in")
 
-        #Generate a verification token and send it via email
+        #generate a verification token and send it via email
         token = generate_token()
         session['verification_token'] = token
-        session['email'] = request.form['email']  #Store email in session for verification
+        session['email'] = request.form['email']  #store email in session for verification
         send_verification_email(request.form['email'], token)
         flash("2FA Code Sent to Email!", 'success')
-        return render_template('twoFA.html')  #Render a page to input verification code
+        return render_template('twoFA.html') 
         
     if request.method == 'GET':
         return render_template('login.html', incorrectpass=incorrectPass)
@@ -94,7 +82,7 @@ def twoFA():
     if request.method == 'POST':
         token = request.form['token']
         if token == session.get('verification_token'):
-            session.pop('verification_token', None)  # Clear the token
+            session.pop('verification_token', None)  #once user has entered token clear it
             session['email'] = session.get('email')
             flash('Login successful!', 'success')
             return redirect(url_for('home'))
@@ -104,8 +92,8 @@ def twoFA():
     return render_template('twoFA.html')
 
 def generate_reset_token(user_email):
-    token = secrets.token_urlsafe(32)  # Generate secure token
-    expiry = datetime.now(timezone.utc) + timedelta(hours=1)  # Token valid for 1 hour
+    token = secrets.token_urlsafe(32)  #generate secure token
+    expiry = datetime.now(timezone.utc) + timedelta(hours=1)  #token valid for 1 hour
     
     query = '''
         UPDATE users
@@ -117,22 +105,22 @@ def generate_reset_token(user_email):
     return token
 
 def send_reset_email(user_email):
-    # Generate the reset token
+
     token = generate_reset_token(user_email)
     reset_url = url_for('reset_password', token=token, _external=True)
 
-    # Create the email content
     subject = "Password Reset Request"
     body = f"""
-    Hello,
-    
+    Hi, 
+
     You requested a password reset. Click the link below to reset your password:
+    
     {reset_url}
     
     If you did not request this, ignore this email.
-    """
 
-    # Create and send the email
+    F1 Tracker
+    """
     msg = Message(subject=subject, recipients=[user_email], body=body)
     mail.send(msg)
 
@@ -149,14 +137,14 @@ def reset_password(token):
         flash("Invalid or expired token.", "danger")
         return redirect(url_for('home'))
 
-    # Convert reset_token_expiry to a datetime object
+    #convert reset_token_expiry to a datetime object so that is can be compared
     try:
         reset_token_expiry = datetime.fromisoformat(result[0]['reset_token_expiry'])
     except (KeyError, ValueError):
         flash("Invalid token expiry format.", "danger")
         return redirect(url_for('home'))
     
-    # Check if the token has expired
+    #check if the token has expired
     if datetime.now(timezone.utc) > reset_token_expiry:
         flash("Token has expired.", "danger")
         return redirect(url_for('home'))
@@ -199,6 +187,7 @@ def forgot_password():
 def register():
     try:
         if request.method == "POST":
+            #take data from form
             email = request.form['email']
             first_name = request.form['firstName']
             password = generate_password_hash(request.form['password'])
@@ -206,11 +195,11 @@ def register():
             team = request.form['team']
             newsletter = request.form.get('newsletter', 0)
 
-            #Check if the email is already in use
+            #check if the email is already in use
             existing_user = db.query_db('SELECT * FROM users WHERE email = ?', [email])
             if existing_user:
                 flash('This email is already in use!', 'danger')
-                return render_template('register.html')  # Render the registration template again
+                return render_template('register.html')  #render again so the user can retype the details
 
             values = (email, first_name, password, driver, team, newsletter)
             app.logger.info(f'New user with values: {values}')
@@ -219,14 +208,16 @@ def register():
                 'INSERT INTO users (email, firstname, password, driverID, teamID, newsletter, verified) VALUES (?, ?, ?, ?, ?, ?, 0)', values)
             db.get_db().commit()
             session['email'] = request.form['email']
-            # Generate a verification token and send it via email
+            #generate a verification token and send it via email
             token = generate_token()
             session['verification_token'] = token
-            session['email'] = email  # Store email in session for verification
+            session['email'] = email #store email in session for verification
             send_verification_email(email, token)
 
             return render_template('verify.html')
-    except:
+    except Exception as e:
+        flash("Something went wrong sending email", "error")
+        app.logger.warning(f"Something went wrong: {e}")
         return render_template('register.html')
     
     if request.method == 'GET':
@@ -252,27 +243,25 @@ def verify():
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
     if request.method == 'POST':
-        # Fetch updated user details from the form
+        #fetch updated user details from the form
         email = session.get('email')
         first_name = request.form['firstName']
-        
-        # Get password
         password = request.form.get('password')
         
         driver = request.form['driver']
         team = request.form['team']
-        newsletter = request.form.get('newsletter', 0)  # Default to 0 if not selected
+        newsletter = request.form.get('newsletter', 0) #default is that they are not registered for the newsletter
 
         if password:
             password = generate_password_hash(password)
-            # Update password only if it's provided
+            #update password only if it's provided
             db.get_db().execute(
                 '''UPDATE users SET firstName = ?, password = ?, driverID = ?, teamID = ?, newsletter = ?
                    WHERE email = ?''',
                 (first_name, password, driver, team, newsletter, email)
             )
         else:
-            #No password so dont update
+            #no password so dont update
             db.get_db().execute(
                 '''UPDATE users SET firstName = ?, driverID = ?, teamID = ?, newsletter = ?
                    WHERE email = ?''',
@@ -285,18 +274,19 @@ def settings():
 
     if request.method == 'GET':
         email = session.get('email')
-        # Fetch user details from the database
+        #fetch user details from the database
         user = db.query_db('SELECT * FROM users WHERE email = ?', [email])
         if user:
-            user = user[0]  # Get the first (and ideally only) user
-            # Fetch all drivers and teams to display on the settings page
+            user = user[0]  #get the first (and hopefully only) user
+            #fetch all drivers and teams to display on the settings page
+            #so that the user can change their favourite driver and team
             teams = db.query_db('SELECT * FROM teams')
             drivers = db.query_db('SELECT * FROM drivers')
             
 
             return render_template('settings.html', user=user, teams=teams, drivers=drivers)
 
-    return redirect(url_for('login'))  # Redirect to login if user not found
+    return redirect(url_for('login'))  #redirect to login if user not found
 
 
 @app.route('/logout')

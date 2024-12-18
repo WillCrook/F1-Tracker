@@ -55,7 +55,7 @@
         button.textContent = selectedItem;  // Update the button text
       }
     
-      // Function to trigger graph generation based on the selected dropdown values
+      //function to trigger graph generation based on the selected dropdown values
       function generateGraph() {
         const graphType = document.getElementById('graphTypeButton').textContent;
         const grandPrix = document.getElementById('grandPrixButton').textContent;
@@ -65,17 +65,17 @@
           return;
         }
 
-        // Flash message for generating graph
+        //flash message for generating graph
         const toastMessage = `Generating ${graphType} graph for ${grandPrix}!`;
         showToast(toastMessage, 'info');
 
-        // Fetch to generate the graph
+        //fetch to generate the graph
         fetch(`/generate-graph?graphType=${encodeURIComponent(graphType)}&grandPrix=${encodeURIComponent(grandPrix)}`)
           .then(response => response.blob())
           .then(imageBlob => {
             const imageUrl = URL.createObjectURL(imageBlob);
             document.getElementById('graphImage').src = imageUrl;
-            // Optionally flash another message when the graph is loaded
+            //flash another message when the graph is loaded
             showToast('Graph successfully generated!', 'success');
           })
           .catch(error => {
@@ -84,7 +84,7 @@
           });
       }
 
-      // Helper function to show toasts
+      //helper function to show toasts
       function showToast(message, category) {
         const toastContainer = document.getElementById('toastContainer');
         const toastHTML = `

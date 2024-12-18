@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score, classification_report
 import warnings
 import requests, zipfile, io
 
-#Grab zip file containing all necessary data from the internet     
+#grab zip file containing all necessary data from the internet     
 zip_file_url = "https://ergast.com/downloads/f1db_csv.zip"
 logger.info(f'Getting {zip_file_url}')
 r = requests.get(zip_file_url)
@@ -19,17 +19,17 @@ dfs = {text_file.filename: pd.read_csv(zip_file.open(text_file.filename))
 logger.info(f'Found {dfs.keys()}')
 warnings.filterwarnings('ignore')    
 
-#Sort the various csv files downloaded into their respective dataframe
+#sort the various csv files downloaded into their respective dataframe
 
 df_drivers = dfs["drivers.csv"]
 df_races = dfs["races.csv"]
 df_results = dfs["results.csv"]
 df_qualifying = dfs["qualifying.csv"]
 
-#The next section is just building/formatting the dataframe for the machine learning model
+#the next section is just building/formatting the dataframe for the machine learning model
 #I have commented the various actions I am doing to the dataframe to make it clear what data is being used
 
-#Add the date to df_results
+#add the date to df_results
 
 df_new = df_races.loc[:, ['raceId', 'date']].drop_duplicates(subset=['raceId'])
 
@@ -37,17 +37,17 @@ df_new = df_new.sort_values(by='date', key=lambda x: x.str.split('-'))
 
 df_new['raceIdOrdered'] = range(1,len(df_new)+1)
 
-#Add the correct order of races to df_results
+#add the correct order of races to df_results
 
 df_results = pd.merge(df_results, df_new.loc[:, ['raceId', 'raceIdOrdered']], how='left', on=['raceId'], )
 
 
-#Fix the dataframe to be in the order of races
+#fix the dataframe to be in the order of races
 
 df_results = df_results.sort_values(by='raceIdOrdered')
 
 
-#Add the years to dataframe results
+#add the years to dataframe results
 
 df_results = df_results.set_index('raceId').join(df_races.loc[:,['year', 'raceId']].set_index('raceId'), on='raceId').reset_index()
 
@@ -57,7 +57,7 @@ df_results = df_results.rename(columns={'positionOrder' : 'racePosition', 'grid'
 
 df_results.head(10)
 
-#Add the year in which the different drivers started racing
+#add the year in which the different drivers started racing
 
 min_year = df_results.groupby('driverId').min()['year']
 
@@ -67,7 +67,7 @@ df_results = df_results.merge(min_year, on='driverId',how='left')
 
 df_results
 
-#Add how many races the driver has participated for  
+#add how many races the driver has participated for  
 
 def count_race_exp(df):
     

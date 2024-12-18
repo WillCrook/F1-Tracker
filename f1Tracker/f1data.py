@@ -5,7 +5,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from io import BytesIO
-import base64
 import fastf1.plotting
 import pandas as pd
 from timple.timedelta import strftimedelta
@@ -139,10 +138,10 @@ class F1Data:
         ax.set_yticks(fastest_laps.index)
         ax.set_yticklabels(fastest_laps['Driver'])
 
-        # show fastest at the top
+        #show fastest at the top
         ax.invert_yaxis()
 
-        # draw vertical lines behind the bars
+        #draw vertical lines behind the bars
         ax.set_axisbelow(True)
         ax.xaxis.grid(True, which='major', linestyle='--', color='black', zorder=-1000)
 
@@ -158,22 +157,21 @@ class F1Data:
         return buf
     
     def get_team_pace_comparison(self, grand_prix):
-        # Load FastF1's dark color scheme
+        #load FastF1's dark color scheme
         fastf1.plotting.setup_mpl(mpl_timedelta_support=False, misc_mpl_mods=False,
                           color_scheme='fastf1')
         
-        # Load the race session.
-        # Pick all quick laps (within 107% of fastest lap).
-        # For races with mixed conditions, pick_wo_box() is better.
+        #choose race laps (within 107% of fastest lap so that slow laps don't skew the data).
+        #for races with mixed conditions the slowest part of the session will be excluded
         race = fastf1.get_session(self.year, grand_prix, 'R')
         race.load()
         laps = race.laps.pick_quicklaps()
 
-        # Convert the lap time column from timedelta to integer.
+        #convert the lap time column from timedelta to integer.
         transformed_laps = laps.copy()
         transformed_laps.loc[:, "LapTime (s)"] = laps["LapTime"].dt.total_seconds()
 
-        # order the team from the fastest (lowest median lap time) tp slower
+        #order the team from the fastest (lowest median lap time excluding slow laps) to the slowest 
         team_order = (
             transformed_laps[["Team", "LapTime (s)"]]
             .groupby("Team")
@@ -182,7 +180,7 @@ class F1Data:
             .index
         )
 
-        # make a color palette associating team names to hex codes
+        #make a color palette associating team names to hex codes
         team_palette = {team: fastf1.plotting.get_team_color(team, session=race)
                         for team in team_order}
 
@@ -204,7 +202,7 @@ class F1Data:
         plt.title(f"{self.year} {grand_prix}")
         plt.grid(visible=False)
 
-        # x-label is redundant
+        #x axis is doesn't do anything for team pace comparison as it is just a comparison
         ax.set(xlabel=None)
         plt.tight_layout()
         buf = BytesIO()
@@ -215,8 +213,8 @@ class F1Data:
 
     def get_gear_shifts(self,grand_prix):
         
-        #   Enable Matplotlib patches for plotting timedelta values and load
-        # Load FastF1's dark color scheme
+        #enable Matplotlib patches for plotting timedelta values and load
+        #load FastF1's dark color scheme to fit colour scheme
         fastf1.plotting.setup_mpl(mpl_timedelta_support=False, misc_mpl_mods=False,
                             color_scheme='fastf1')
         session = fastf1.get_session(self.year, grand_prix, 'Q')
@@ -225,8 +223,7 @@ class F1Data:
         lap = session.laps.pick_fastest()
         tel = lap.get_telemetry()
        
-        # Prepare the data for plotting by converting it to the appropriate numpy
-        # data types
+        #prepare the data for plotting by converting it to the appropriate numpy data types
 
         x = np.array(tel['X'].values)
         y = np.array(tel['Y'].values)
@@ -238,16 +235,15 @@ class F1Data:
         #create figure and axis
         fig, ax = plt.subplots(figsize=(15, 10))
     
-        # Create a line collection. Set a segmented colormap and normalize the plot
-        # to full integer values of the colormap
+        #create a line collection. Set a segmented colormap and normalize the plot
+        #to full integer values of the colormap
 
         cmap = colormaps['Paired']
         lc_comp = LineCollection(segments, norm=plt.Normalize(1, cmap.N+1), cmap=cmap)
         lc_comp.set_array(gear)
         lc_comp.set_linewidth(4)
 
-        # Create the plot
-        
+        #plot        
         plt.gca().add_collection(lc_comp)
         plt.axis('equal')
         plt.tick_params(labelleft=False, left=False, labelbottom=False, bottom=False)
@@ -257,8 +253,8 @@ class F1Data:
             f"{lap['Driver']} - {session.event['EventName']} {session.event.year}"
         )
         
-        # Add a colorbar to the plot. Shift the colorbar ticks by +0.5 so that they
-        # are centered for each color segment.
+        #add a colorbar to the plot. Shift the colorbar ticks by +0.5 so that they
+        #are centered for each color segment.
 
         cbar = plt.colorbar(mappable=lc_comp, label="Gear",
                             boundaries=np.arange(1, 10))
@@ -273,20 +269,20 @@ class F1Data:
         return buf
 
     def get_driver_laptime_comparison(self,grand_prix):
-        # Enable Matplotlib patches for plotting timedelta values and load
-        # FastF1's dark color scheme
+        #enable Matplotlib patches for plotting timedelta values and load
+        #fastF1's dark color scheme
         fastf1.plotting.setup_mpl(mpl_timedelta_support=True, misc_mpl_mods=False,
                                 color_scheme='fastf1')
 
 
-        # Load the race session
+        #load the race session
 
         race = fastf1.get_session(self.year, grand_prix , 'R')
         race.load()
 
   
-        # get laps for top 10 (points).
-        # remove slow laps (eg. yellow flag, VSC, SC, pitstops etc.) as they make the graph axis look whack.
+        #get laps for top 10 (points).
+        #remove slow laps (eg. yellow flag, VSC, SC, pitstops etc.) as they make the graph axis look whack.
         point_finishers = race.drivers[:10]
         driver_laps = race.laps.pick_drivers(point_finishers).pick_quicklaps()
         driver_laps = driver_laps.reset_index()
@@ -294,13 +290,12 @@ class F1Data:
         #get driver codes in the finishing order do display them on the graph.
         finishing_order = [race.get_driver(i)["Abbreviation"] for i in point_finishers]
 
-        # violin plots to show the distributions.
-        # then I use swarm plot to show the actual laptimes.
+        #violin plots to show the distributions then I use swarm plot to show the actual laptimes.
 
-        # create the figure
+        #create the figure
         fig, ax = plt.subplots(figsize=(15, 10))
 
-        # convert timedelta to float (in seconds) for seaborn
+        #convert timedelta to float (in seconds) for seaborn
         driver_laps["LapTime(s)"] = driver_laps["LapTime"].dt.total_seconds()
 
         sns.violinplot(data=driver_laps,
@@ -326,7 +321,7 @@ class F1Data:
        
 
         
-        # Make the plot more aesthetic
+        #make the plot more aesthetic
         ax.set_xlabel("Driver")
         ax.set_ylabel("Lap Time (s)")
         plt.suptitle(f"{self.year} {grand_prix} Lap Time Distributions")
@@ -341,7 +336,7 @@ class F1Data:
     
     def get_tyre_strategies(self, grand_prix):
 
-        # Load the race session
+        #load the race session
 
         session = fastf1.get_session(self.year, grand_prix, 'R')
         session.load()
@@ -390,7 +385,7 @@ class F1Data:
 
                 previous_stint_end += row["StintLength"]
                 
-        # Make the plot more readable and intuitive
+        #make the plot more readable and intuitive
         plt.title(f"{self.year} {grand_prix} Strategies")
         plt.xlabel("Lap Number")
         plt.grid(False)

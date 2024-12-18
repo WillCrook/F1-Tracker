@@ -1,18 +1,4 @@
-"""
-
-user = query_db('select * from users where username = ?',
-                [the_username], one=True)
-Reference : https://flask.palletsprojects.com/en/3.0.x/patterns/sqlite3/
-
-https://flask.palletsprojects.com/en/3.0.x/tutorial/database/#create-the-tables
-
-
->>> from f1tracker import db
->>> db.init_db()
-"""
-
 import sqlite3
-import click
 from flask import current_app, g
 
 DATABASE = './database.db'
@@ -42,14 +28,6 @@ def close_connection():
     db = getattr(g, '_database', None)
     if db is not None:
         db.close()
-
-# def init_db():
-#     db = sqlite3.connect(DATABASE)
-#     db.cursor().execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user TEXT, password TEXT)")
-    
-#     values = ('WillCrook', 'wishstream')
-#     db.cursor().execute("INSERT INTO users VALUES(null, ?, ?)", values)
-#     db.close()
 
 def init_db_sql_file(sql_file='./f1Tracker/schema.sql'):
     db = sqlite3.connect(DATABASE)
