@@ -21,10 +21,10 @@ matplotlib.use('Agg')
 class F1Data:
     def __init__(self):
         try:
-            #Set the year 
+            #set the year 
             self.year = 2024
 
-            # Get remaining events
+            #get remaining events
             remaining_events = fastf1.get_events_remaining()
             if not remaining_events.empty:
                 self.upcoming_event = remaining_events.iloc[0].to_dict()
@@ -32,7 +32,7 @@ class F1Data:
                 self.upcoming_event = None
                 logger.warning("No upcoming events found.")
 
-            # Get event schedule
+            #get event schedule
             event_schedule = fastf1.get_event_schedule(self.year)
             if 'EventName' in event_schedule:
                 self.events = event_schedule['EventName'].to_dict()
@@ -41,7 +41,7 @@ class F1Data:
                 self.events = {}
                 logger.warning("Unable to get events.")
 
-            #Calculate the previous round number 
+            #calculate the previous round number 
             #if there is no upcoming event then the last event gets picked
             if self.upcoming_event == None:
                 self.previous_round_number = list(self.events.keys())[-1]
@@ -55,10 +55,6 @@ class F1Data:
             self.previous_round_number = None
         
     def get_events(self):
-        if self.previous_round_number == 0:
-            logger.error("Unable to filter events. There are no events")
-            return ["Error retrieving events"]
-
         try:
             # Filter and reverse events
             event = [event for round, event in self.events.items() if 0 < round <= self.previous_round_number]
@@ -75,14 +71,14 @@ class F1Data:
         fastf1.plotting.setup_mpl(mpl_timedelta_support=True, misc_mpl_mods=False,
                           color_scheme='fastf1')
         
-        # Load the session for the current round
+        #load the session for the current round
         session = fastf1.get_session(self.year, grand_prix, 'R')
         session.load(telemetry=False, weather=False)
 
-        # Create the figure and axis
+        #create the figure and axis
         fig, ax = plt.subplots(figsize=(15, 10))
 
-        # Plot driver positions
+        #plot driver positions
         for drv in session.drivers:
             drv_laps = session.laps.pick_driver(drv)
             abb = drv_laps['Driver'].iloc[0]  # Get driver abbreviation
@@ -92,7 +88,7 @@ class F1Data:
             
             ax.plot(drv_laps['LapNumber'], drv_laps['Position'], label=abb, **style)
 
-        # Customize the plot
+        #customize the plot axis
         ax.set_ylim([20.5, 0.5])
         ax.set_yticks([1, 5, 10, 15, 20])
         ax.set_xlabel('Lap')
@@ -291,7 +287,6 @@ class F1Data:
         finishing_order = [race.get_driver(i)["Abbreviation"] for i in point_finishers]
 
         #violin plots to show the distributions then I use swarm plot to show the actual laptimes.
-
         #create the figure
         fig, ax = plt.subplots(figsize=(15, 10))
 
@@ -319,8 +314,6 @@ class F1Data:
                     size=4,
                     )
        
-
-        
         #make the plot more aesthetic
         ax.set_xlabel("Driver")
         ax.set_ylabel("Lap Time (s)")
@@ -337,32 +330,27 @@ class F1Data:
     def get_tyre_strategies(self, grand_prix):
 
         #load the race session
-
         session = fastf1.get_session(self.year, grand_prix, 'R')
         session.load()
         laps = session.laps
 
         
-        # Get the list of driver numbers
+        #get the list of driver numbers
         drivers = session.drivers
 
-        # Convert the driver numbers to three letter abbreviations
+        #convert the driver numbers to three letter abbreviations
         drivers = [session.get_driver(driver)["Abbreviation"] for driver in drivers]
 
-        # We need to find the stint length and compound used
-        # for every stint by every driver.
-        # We do this by first grouping the laps by the driver,
-        # the stint number, and the compound.
-        # And then counting the number of laps in each group.
+        #works out the stint length and compound used for every stint by every driver 
         stints = laps[["Driver", "Stint", "Compound", "LapNumber"]]
-        stints = stints.groupby(["Driver", "Stint", "Compound"])
-        stints = stints.count().reset_index()
+        stints = stints.groupby(["Driver", "Stint", "Compound"]) #groups same values in each column
+        stints = stints.count().reset_index() #pandas function to count each row and then converts into 0 indexing
 
-        # The number in the LapNumber column now stands for the number of observations
-        # in that group aka the stint length.
+        #the number in the LapNumber column now stands for the number of observations
+        #in that group aka the stint length.
         stints = stints.rename(columns={"LapNumber": "StintLength"})
 
-        # Now we can plot the strategies for each driver
+        #now we can plot the strategies for each driver
         fig, ax = plt.subplots(figsize=(15, 10))
 
         for driver in drivers:
@@ -370,8 +358,8 @@ class F1Data:
 
             previous_stint_end = 0
             for idx, row in driver_stints.iterrows():
-                # each row contains the compound name and stint length
-                # we can use these information to draw horizontal bars
+                #each row contains the compound name and stint length
+                #we can use these information to draw horizontal bars
                 compound_color = fastf1.plotting.get_compound_color(row["Compound"],
                                                                     session=session)
                 plt.barh(
@@ -389,10 +377,10 @@ class F1Data:
         plt.title(f"{self.year} {grand_prix} Strategies")
         plt.xlabel("Lap Number")
         plt.grid(False)
-        # invert the y-axis so drivers that finish higher are closer to the top
+        #invert the y-axis so drivers that finish higher are closer to the top
         ax.invert_yaxis()
 
-        # Plot aesthetics
+        #plot aesthetics
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False)
@@ -404,17 +392,14 @@ class F1Data:
         plt.close(fig)
         return buf
     
-
-
     def get_upcoming_grand_prix_info(self):
-
-        #Upcoming Grand Prix works by always returning the "error retrieving upcoming Grand Prix info"
+        #upcoming Grand Prix works by always returning the "error retrieving upcoming Grand Prix info"
         #if there is any issue to the user. I have also implemented logs throughout so that the admin can
         #can see on there end where the problem actually lies. This would show whether its an API issue or it's just because its the end of the season. 
 
         logger.info("Retrieving upcoming Grand Prix info...")
         
-        #Check to see if there is an upcoming Grand Prix
+        #check to see if there is an upcoming Grand Prix
         if not self.upcoming_event:
             logger.error("No upcoming event available.")
             return ["No Upcoming Grand Prix"]
@@ -427,7 +412,7 @@ class F1Data:
                 logger.error("Missing 'EventDate' in upcoming event.")
                 return ["Error retrieving upcoming Grand Prix info"]
 
-            # Load previous session info
+            #load previous session info
             try:
                 last_circuit_info = fastf1.get_session(date.year - 1, upcoming_event['EventName'], 'R')
                 last_circuit_info.load(laps=True, telemetry=False, weather=False, messages=False)

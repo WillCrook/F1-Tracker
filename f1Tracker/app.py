@@ -8,7 +8,6 @@ from flask_mail import Mail, Message
 import os
 import secrets
 from dotenv import load_dotenv
-import base64
 from io import BytesIO
 from datetime import datetime, timedelta, timezone
 
@@ -301,11 +300,11 @@ def delete_account():
     try:
         email = session.get('email')
 
-        # Delete user from the database
+        #delete user from the database
         db.get_db().execute('DELETE FROM users WHERE email = ?', [email])
         db.get_db().commit()
 
-        # Log the user out
+        #log the user out
         session.pop('email', None)
 
         flash('Your account has been successfully deleted.', 'info')
@@ -318,7 +317,7 @@ def delete_account():
 def get_admin():
     email = session.get('email')
     if not email:
-        return 0  # Return 0 if email is not found (non-admin)
+        return 0  #return 0 if email is not found (user not signed in) so obviously their not an admin
     
     query = '''
         SELECT admin.permissions
@@ -327,17 +326,17 @@ def get_admin():
         WHERE users.email = ?
     '''
     result = db.query_db(query, [email], one=True)
-    return result['permissions'] if result else 0  # Default to 0 if no admin permissions
+    return result['permissions'] if result else 0  #default to 0 if no admin permissions
 
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_terminal():
-    admin_permissions = get_admin()  # Check if the user is an admin
+    admin_permissions = get_admin()  #check if the user is an admin
     if not admin_permissions:
         flash("Unauthorized access!", "danger")
         return redirect(url_for('home'))
 
-    # Sorting setup (default: by userID)
+    #sort: default is to sort by userID
     sort_by = request.args.get('sort_by', 'userID')
     valid_sort_columns = ['userID', 'email', 'is_admin']
     if sort_by not in valid_sort_columns:
@@ -360,8 +359,7 @@ def admin_terminal():
     most_common_driver = stats[0]['most_common_driver'] if stats else None
     most_common_team = stats[0]['most_common_team'] if stats else None
 
-
-    # Fetch users with admin status using JOIN
+    #fetch users with admin status using JOIN
     query = f'''
         SELECT users.userID, users.email, users.firstname, users.verified, 
                users.newsletter, users.driverID, users.teamID,
@@ -374,12 +372,13 @@ def admin_terminal():
     if sort_by == 'is_admin':
         users.reverse()  # To display the list by admin first
 
-    # Handle actions based on permissions
+    #get data from admin.html
     if request.method == 'POST':
         action = request.form.get('action')
         user_id = request.form.get('user_id')
         email = request.form.get('email')
 
+        #check for correct admin perms before carrying out action
         if action == 'send_newsletter' and admin_permissions >= 1:
             send_newsletter()
             flash("Newsletter sent successfully!", "success")
@@ -398,7 +397,7 @@ def admin_terminal():
             flash("User account deleted!", "danger")
 
         elif action == 'clear_recommendations' and admin_permissions >= 2:
-            #Clears Recommendations
+            #clears recommendations
             query = "DELETE FROM displayData"
             db.query_db(query)
             db.get_db().commit()
@@ -414,7 +413,7 @@ def admin_terminal():
                            most_common_team=most_common_team)
 
 def add_admin(email, permissions):
-    # Query to check if the user exists and get their userID with a LEFT JOIN
+    #query to check if the user exists and get their userID with a LEFT JOIN
     query = '''
         SELECT u.userID, a.permissions
         FROM users u
@@ -424,20 +423,20 @@ def add_admin(email, permissions):
     user = db.query_db(query, [email], one=True)
 
     if user:
-        # If the user already has permissions in the admin table, they're already an admin
+        #if the user already has permissions in the admin table, they're already an admin
         if user['permissions'] is not None:
             app.logger.info(f"{email} is already an admin.")
-            return False  # The user is already an admin
+            return False  #the user is already an admin
 
-        # Insert the user as an admin with the specified permissions
+        #insert the user as an admin with the specified permissions
         insert_query = 'INSERT INTO admin (userID, permissions) VALUES (?, ?)'
         db.query_db(insert_query, [user['userID'], permissions])
         db.get_db().commit()
         app.logger.info(f"{email} has been made an admin")
-        return True  # Admin added successfully
+        return True  #admin added successfully
     else:
         app.logger.error(f"User with email {email} not found.")
-        return False  # User not found
+        return False  #user not found
 
     
 def remove_admin(user_id):
@@ -447,50 +446,69 @@ def remove_admin(user_id):
     app.logger.info(f"User ID: {user_id} has been removed from admin")
 
 def delete_user(user_id):
-    # First, check if the user is an admin
+    #first, check if the user is an admin
     query = 'SELECT * FROM admin WHERE userID = ?'
     admin_record = db.query_db(query, [user_id], one=True)
 
-    # If the user is an admin, delete them from the admin table
+    #if the user is an admin, delete them from the admin table
     if admin_record:
         delete_admin_query = 'DELETE FROM admin WHERE userID = ?'
         db.query_db(delete_admin_query, [user_id])
-        db.get_db().commit()  # Commit changes to admin table
+        db.get_db().commit() 
 
-    # Now, delete the user from the users table
+    #now, delete the user from the users table
     delete_user_query = 'DELETE FROM users WHERE userID = ?'
     db.query_db(delete_user_query, [user_id])
-    db.get_db().commit()  # Commit changes to users table
+    db.get_db().commit() 
     app.logger.info(f"User ID: {user_id} and associated admin record (if any) have been deleted.")
 
 
 def merge_sort(data, key):
+
+    #base case, less than 1 item it is sorted
     if len(data) <= 1:
         return data
 
+    #divide into two halves
     mid = len(data) // 2
+
+    #recursively sort the left half
     left = merge_sort(data[:mid], key)
+
+    #recursively sort the right half
     right = merge_sort(data[mid:], key)
 
+    #merge the two sorted halves into a single sorted list
     return merge(left, right, key)
 
 def merge(left, right, key):
-    result = []
-    while left and right:
-        if str(left[0][key]) <= str(right[0][key]):
-            result.append(left.pop(0))
-        else:
-            result.append(right.pop(0))
 
-    result.extend(left if left else right)
+    result = []  
+
+    #while both lists have elements, compare the first elements and merge them.
+    while left and right:
+        #compare based on the key
+        if str(left[0][key]) <= str(right[0][key]):
+            result.append(left.pop(0))  #if the element is smaller on the left assign that 
+        else:
+            result.append(right.pop(0))  #otherwise assign the element on the right
+
+    #check if there are elements left, if there are then add them to the final result
+    if left:
+        remaining = left
+    else:
+        remaining = right
+    result.extend(remaining)
+
     return result
 
-#Cache used to enhance perfomance of the website
+
+#cache used to enhance performance of the website
 @cache.cached(timeout=3600, key_prefix='upcoming_grand_prix')
 def getUpcomingGrandPrixInfo():
     return f1_data.get_upcoming_grand_prix_info()
 
-#Cache again used otherwise the processing would be through the roof
+#cache again used otherwise the processing would be through the roof
 
 @cache.cached(timeout=3600, key_prefix='driver_rankings_quali')
 def driverRankingsRace():
@@ -507,7 +525,7 @@ def generate_graph():
     graph_type = request.args.get('graphType')
     grand_prix = request.args.get('grandPrix')
 
-    # Increment view count for the selected graph type
+    #increment view count for the selected graph type
     db.get_db().execute('''
         INSERT INTO displayData (displayTypeID, driverID, grandPrix, views)
         VALUES (?, ?, ?, 1)
@@ -516,7 +534,7 @@ def generate_graph():
     ''', [graph_type, None, grand_prix])
     db.get_db().commit()
 
-    # Based on the selected graph type and Grand Prix, generate the appropriate graph
+    #based on the selected graph type and Grand Prix, generate the appropriate graph
     if graph_type == "Position Changed during a Race":
         image_data = f1_data.get_positions_change_during_a_race(grand_prix)
     
@@ -538,7 +556,7 @@ def generate_graph():
     else:
         return "Graph type not supported", 400
 
-    # Serve the image data (this should be returned as a file object)
+    #serve the image data
     return send_file(image_data, mimetype='image/png')
 
 def getGraphTypes():
@@ -592,39 +610,34 @@ def getSignedIn():
 @app.route('/send-newsletter')
 def send_newsletter():
     try:
-        # Prepare the graphs
-        grand_prix = f1_data.get_last_grand_prix()  # Set this dynamically based on current or upcoming race
+        #get graphs
+        grand_prix = f1_data.get_last_grand_prix()
         position_change_graph = f1_data.get_positions_change_during_a_race(grand_prix)
         quali_results_graph = f1_data.get_quali_results_overview(grand_prix)
         team_pace_comparison_graph = f1_data.get_team_pace_comparison(grand_prix)
 
-        # List of graphs to be attached
+        #list of graphs to be attached
         graphs = [
             ("Position Change During Race", position_change_graph),
             ("Qualifying Results Overview", quali_results_graph),
             ("Team Pace Comparison", team_pace_comparison_graph)
         ]
         
-        # Get subscribers
+        #get newsletter subscribers
         subscribers = db.query_db("SELECT firstName, email FROM users WHERE newsletter = 1")
 
-        # Send to all subscribers
+        #send to all subscribers
         for subscriber in subscribers:
-            # Extract email from subscriber dictionary
+        
             email = subscriber['email']
-
-            # Create message
             msg = Message("F1 Race Update - Newsletter", recipients=[email])
-
-            # Add text content to the email
             msg.body = "Dear Subscriber,\n\nHere is your latest F1 race update, with graphs for the latest race."
 
-            # Attach the graphs
+            #attach the graphs
             for graph_title, graph_data in graphs:
                 graph_file = BytesIO(graph_data.read())  # Assuming graph_data is a file-like object
                 msg.attach(f"{graph_title}.png", "image/png", graph_file.read())
                 
-            # Send the email
             mail.send(msg)
 
         return "Newsletter sent successfully!", 200
@@ -633,7 +646,6 @@ def send_newsletter():
         return f"Error sending newsletter: {e}", 500
 
 def get_payload():
-    user_id = session.get('user_id')  # Assuming user ID is stored in session after login
 
     payload = {
         'qualiresults': qualiResults(), # api
