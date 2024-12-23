@@ -328,6 +328,38 @@ def get_admin():
     result = db.query_db(query, [email], one=True)
     return result['permissions'] if result else 0  #default to 0 if no admin permissions
 
+def get_admin_stats():
+    newsletter_query = '''
+        SELECT COUNT(*) AS newsletter_count
+        FROM users
+        WHERE newsletter = 1
+        '''
+    newsletter_result = db.query_db(newsletter_query) #stored as a dictionary in array
+    newsletter_count = newsletter_result[0]['newsletter_count'] if newsletter_result else 0
+
+    most_common_driver_query = '''
+        SELECT driverName AS most_common_driver
+        FROM users
+        LEFT JOIN drivers ON users.driverID = drivers.driverID
+        GROUP BY driverID, driverName
+        ORDER BY COUNT(*) DESC
+        LIMIT 1
+        '''
+    most_common_driver_result = db.query_db(most_common_driver_query) #stored as a dictionary in array
+    most_common_driver = most_common_driver_result[0]['most_common_driver'] if most_common_driver_result else None
+
+    most_common_team_query = '''
+        SELECT teamName AS most_common_team
+        FROM users
+        LEFT JOIN teams ON users.teamID = teams.teamID
+        GROUP BY teamID, teamName
+        ORDER BY COUNT(*) DESC
+        LIMIT 1
+        '''
+    most_common_team_result = db.query_db(most_common_team_query) #stored as a dictionary in array
+    most_common_team = most_common_team_result[0]['most_common_team'] if most_common_team_result else None
+
+    return newsletter_count, most_common_driver, most_common_team
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_terminal():
@@ -336,30 +368,16 @@ def admin_terminal():
         flash("Unauthorized access!", "danger")
         return redirect(url_for('home'))
 
+    #retrieve admin stats to display
+    newsletter_count, most_common_driver, most_common_team = get_admin_stats()
+
     #sort: default is to sort by userID
     sort_by = request.args.get('sort_by', 'userID')
     valid_sort_columns = ['userID', 'email', 'is_admin']
     if sort_by not in valid_sort_columns:
         sort_by = 'userID'
 
-    stats_query = '''
-    SELECT 
-        COUNT(CASE WHEN users.newsletter = 1 THEN 1 END) AS newsletter_count,
-        most_common_driver.driverName AS most_common_driver,
-        most_common_team.teamName AS most_common_team
-    FROM users
-    LEFT JOIN drivers AS most_common_driver
-        ON users.driverID = most_common_driver.driverID
-    LEFT JOIN teams AS most_common_team
-        ON users.teamID = most_common_team.teamID
-    GROUP BY most_common_driver.driverName, most_common_team.teamName
-    '''
-    stats = db.query_db(stats_query)
-    newsletter_count = stats[0]['newsletter_count'] if stats else 0
-    most_common_driver = stats[0]['most_common_driver'] if stats else None
-    most_common_team = stats[0]['most_common_team'] if stats else None
-
-    #fetch users with admin status using JOIN
+    #fetch users with admin status
     query = f'''
         SELECT users.userID, users.email, users.firstname, users.verified, 
                users.newsletter, users.driverID, users.teamID,
@@ -465,7 +483,7 @@ def delete_user(user_id):
 
 def merge_sort(data, key):
 
-    #base case, less than 1 item it is sorted
+    #base case, less than 1 item then it is sorted
     if len(data) <= 1:
         return data
 
