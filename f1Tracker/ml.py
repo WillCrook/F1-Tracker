@@ -58,7 +58,6 @@ min_year = (min_year.reset_index()).rename({'year':'yearStarted'}, axis=1)
 df_results = df_results.merge(min_year, on='driverId',how='left')
 
 #add how many races the driver has participated for  
-
 def count_race_exp(dataframe):
     
     exp = []

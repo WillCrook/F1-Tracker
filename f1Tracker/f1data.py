@@ -15,7 +15,7 @@ import numpy as np
 from matplotlib import colormaps
 from matplotlib.collections import LineCollection
 
-# Set matplotlib to non GUI to save resources
+#set matplotlib to non GUI to save resources
 matplotlib.use('Agg')
 
 class F1Data:
@@ -56,7 +56,7 @@ class F1Data:
         
     def get_events(self):
         try:
-            # Filter and reverse events
+            #filter and reverse events
             event = [event for round, event in self.events.items() if 0 < round <= self.previous_round_number]
             event.reverse()
             return event
@@ -430,5 +430,3 @@ class F1Data:
             logger.error(f"Error in get_upcoming_grand_prix_info: {e}")
 
         return ["Error retrieving upcoming Grand Prix info"]
-
-        
