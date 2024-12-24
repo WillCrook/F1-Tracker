@@ -51,7 +51,7 @@ def db_init():
 def login():
     incorrectPass = False
     if request.method == 'POST':
-        users = db.query_db('select * from users where email = ?', [request.form['email']])
+        users = db.query_db('select * from users where email = ?', [request.form['email'].lower()])
         if len(users) == 0:
             invalidEmail = True
             return render_template('login.html', invalidemail = invalidEmail)
@@ -62,7 +62,7 @@ def login():
             incorrectPass = True
             return render_template('login.html', incorrectpass=incorrectPass)
         
-        session['email'] = request.form['email']
+        session['email'] = request.form['email'].lower()
         app.logger.info(f"user {session['email']} logged in")
 
         #generate a verification token and send it via email
@@ -187,7 +187,7 @@ def register():
     try:
         if request.method == "POST":
             #take data from form
-            email = request.form['email']
+            email = request.form['email'].lower()
             first_name = request.form['firstName']
             password = generate_password_hash(request.form['password'])
             driver = request.form['driver']
@@ -338,25 +338,25 @@ def get_admin_stats():
     newsletter_count = newsletter_result[0]['newsletter_count'] if newsletter_result else 0
 
     most_common_driver_query = '''
-        SELECT driverName AS most_common_driver
+        SELECT drivers.driverName AS most_common_driver
         FROM users
         LEFT JOIN drivers ON users.driverID = drivers.driverID
-        GROUP BY driverID, driverName
+        GROUP BY drivers.driverID, drivers.driverName
         ORDER BY COUNT(*) DESC
         LIMIT 1
         '''
-    most_common_driver_result = db.query_db(most_common_driver_query) #stored as a dictionary in array
+    most_common_driver_result = db.query_db(most_common_driver_query)
     most_common_driver = most_common_driver_result[0]['most_common_driver'] if most_common_driver_result else None
 
     most_common_team_query = '''
-        SELECT teamName AS most_common_team
+        SELECT teams.teamName AS most_common_team
         FROM users
         LEFT JOIN teams ON users.teamID = teams.teamID
-        GROUP BY teamID, teamName
+        GROUP BY teams.teamID, teams.teamName
         ORDER BY COUNT(*) DESC
         LIMIT 1
-        '''
-    most_common_team_result = db.query_db(most_common_team_query) #stored as a dictionary in array
+    '''
+    most_common_team_result = db.query_db(most_common_team_query)
     most_common_team = most_common_team_result[0]['most_common_team'] if most_common_team_result else None
 
     return newsletter_count, most_common_driver, most_common_team
