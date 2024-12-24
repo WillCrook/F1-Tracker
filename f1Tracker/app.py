@@ -663,6 +663,31 @@ def send_newsletter():
     except Exception as e:
         return f"Error sending newsletter: {e}", 500
 
+def get_team_logo():
+   
+    if getSignedIn():
+        try:
+            query = """
+                SELECT teams.teamName
+                FROM users
+                JOIN teams ON users.teamID = teams.teamID
+                WHERE users.email = ?
+                """
+            result = db.query_db(query, [session['email']], one=True)
+            if result:
+                app.logger.info(f'Result looks like this {result}')
+                fav_team = result['teamName'].lower().replace(' ', '')
+                app.logger.info(f'fav_team looks like this {fav_team}')
+                return f"{fav_team}.png"
+            else: 
+                return 'default.png'
+            
+        except Exception as e:
+            app.logger.error(f"Error with retrieving users profile picture: {e}")
+            return 'default.png'
+    else:
+        return 'loggedout.jpg'
+
 def get_payload():
 
     payload = {
@@ -675,18 +700,13 @@ def get_payload():
         'graphtypes': getGraphTypes(), #f1data
         'grandprixlist': f1_data.get_events(),  # Grand Prix events from f1data.py
         'isadmin' : get_admin(), 
-        'graph_recommendations' : get_graph_recommendations(3)
+        'graph_recommendations' : get_graph_recommendations(3),
+        'profilepicture' : get_team_logo()
     }
 
     return payload
 
 @app.route('/')
 def home():
-
     payload = get_payload()
-
     return render_template('index.html', data=payload)
-
-@app.route('/static/<path:path>')
-def serve_static_files(path):
-    return send_from_directory('static', path)

@@ -136,7 +136,7 @@
             {% if data.signedin %}
             <div class="dropdown text-end">
               <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                <img src="https://avatars.githubusercontent.com/u/78361326?s=96&v=4" alt="mdo" width="32" height="32" class="rounded-circle">
+                <img src="{{ url_for('static', filename='assets/team_logos/' + data.profilepicture) }}" alt="mdo" width="32" height="32" class="rounded-circle" style="max-width: 100%; max-height: 100%; object-fit: cover;">
               </a>
               <ul class="dropdown-menu text-small">
                 {% if data.isadmin %}
@@ -223,7 +223,7 @@
         <div class="row">
           <div class="col-md-8">
             <div class="graph-container text-center">
-              <img id="graphImage" src="../static/assets/images/graph_placeholder.png" alt="Graph will appear here" class="img-fluid">
+              <img id="graphImage" src="{{ url_for('static', filename='assets/images/graph_placeholder.png') }}" alt="Graph will appear here" class="img-fluid">
             </div>
           </div>
           <div class="col-md-4">
