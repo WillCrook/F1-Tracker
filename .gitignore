@@ -16,7 +16,7 @@ venv/
 database.db
 f1db_csv
 environmentVariables.env
-
+.DS_Store
 
 # Include tracked hidden files and directories in search and diff tools
 !.dockerignore
