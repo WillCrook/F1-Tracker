@@ -522,18 +522,18 @@ def merge(left, right, key):
 
 
 #cache used to enhance performance of the website
-@cache.cached(timeout=3600, key_prefix='upcoming_grand_prix')
+@cache.cached(timeout=432000, key_prefix='upcoming_grand_prix')
 def getUpcomingGrandPrixInfo():
     return f1_data.get_upcoming_grand_prix_info()
 
 #cache again used otherwise the processing would be through the roof
 
-@cache.cached(timeout=432000, key_prefix='driver_rankings_quali')
+@cache.cached(timeout=3600, key_prefix='driver_rankings_race')
 def driverRankingsRace():
     rankings, accuracy = ml.getRacePredictions()
     return [rankings, accuracy]
         
-@cache.cached(timeout=432000, key_prefix='driver_rankings_quali')
+@cache.cached(timeout=3600, key_prefix='driver_rankings_quali')
 def driverRankingsQuali():
     rankings, accuracy = ml.getQualiPredictions()
     return [rankings, accuracy]
@@ -588,14 +588,6 @@ def getGraphTypes():
             "Tyre Strategies During a Race"
             ]
 
-def practiseResults():
-    return [
-        "Top Speed: Charles Leclerc - 295 km/h",
-        "Fastest Lap: Charles Leclerc - 1m 24.075s",
-        "Fastest Sector 1: Charles Leclerc - 26.042",
-        "Fastest Sector 2: Charles Leclerc - 27.010",
-        "Fastest Sector 3: Charles Leclerc - 26.080"
-    ]
 def get_most_viewed_graphs(number_of_recomendations):
     query = '''
     SELECT displayTypeID, grandPrix, SUM(views) AS total_views
@@ -697,7 +689,6 @@ def get_payload():
         'driverrankingsquali' : driverRankingsQuali()[0], # ML
         'predictionaccuracyquali' : str(driverRankingsRace()[1]) + '%', #ML
         'upcominggrandprixlist': getUpcomingGrandPrixInfo(), # api 
-        'practiseresults' : practiseResults(), # api
         'signedin' : getSignedIn(), #session
         'graphtypes': getGraphTypes(), #f1data
         'grandprixlist': f1_data.get_events(),  # Grand Prix events from f1data.py

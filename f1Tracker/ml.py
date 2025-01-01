@@ -181,7 +181,7 @@ def XGBoost_model_train(X, Y, test_size=0.2, cv=10):
 
 def getRacePredictions():
     #features for race
-    X = dataframe[['startingPosition', 'driverExpYears', 'meanPace', 'maxPace']]  # Select features
+    X = dataframe[['startingPosition', 'driverExpYears', 'meanPace', 'maxPace']]  #select features
     Y_position = dataframe["racePosition"] - 1
 
     #run machine learning model
@@ -225,8 +225,8 @@ def getRacePredictions():
 
 def getQualiPredictions():
     #features for quali
-    X = dataframe[['driverExpYears', 'meanPace', 'maxPace']]  # Select relevant features for quali
-    Y_position = dataframe["qualiResultPosition"] - 1  # Target is the qualifying position
+    X = dataframe[['driverExpYears', 'meanPace', 'maxPace']]  #select features for quali
+    Y_position = dataframe["qualiResultPosition"] - 1  #target is the qualifying position
 
     #run the machine learning model
     model, accuracy = XGBoost_model_train(X, Y_position)
