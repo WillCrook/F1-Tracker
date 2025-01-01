@@ -124,7 +124,7 @@ class F1RaceData(F1Data):
 
         #plot driver positions
         for driver in session.drivers:
-            driver_laps = session.laps.pick_driver(drv)
+            driver_laps = session.laps.pick_driver(driver)
             abb = driver_laps['Driver'].iloc[0]  # Get driver abbreviation
             style = fastf1.plotting.get_driver_style(identifier=abb,
                                              style=['color', 'linestyle'],
