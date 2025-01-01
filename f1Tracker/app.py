@@ -32,6 +32,8 @@ app.secret_key = b'9417b2d7beab235eae274c28716b73e3c06fcb9a898bd4a930301cc4c3a2d
 
 signedIn = False
 f1_data = f1data.F1Data()
+f1_data_race = f1data.F1RaceData()
+f1_data_quali = f1data.F1QualiData()
 
 def send_verification_email(email, token):
     emailMessage = Message('Your Verification Code', recipients=[email])
@@ -555,22 +557,22 @@ def generate_graph():
 
     #based on the selected graph type and Grand Prix, generate the appropriate graph
     if graph_type == "Position Changed during a Race":
-        image_data = f1_data.get_positions_change_during_a_race(grand_prix)
+        image_data = f1_data_race.get_positions_change_during_a_race(grand_prix)
     
     elif graph_type == "Qualifying Results Overview":
-        image_data = f1_data.get_quali_results_overview(grand_prix)
+        image_data = f1_data_quali.get_quali_results_overview(grand_prix)
 
     elif graph_type == "Gear Shifts on Track":
-        image_data = f1_data.get_gear_shifts(grand_prix)
+        image_data = f1_data_quali.get_gear_shifts(grand_prix)
     
     elif graph_type == "Team Pace Comparison":
-        image_data = f1_data.get_team_pace_comparison(grand_prix)
+        image_data = f1_data_race.get_team_pace_comparison(grand_prix)
 
     elif graph_type == "Driver Laptime Comparison":
-        image_data = f1_data.get_driver_laptime_comparison(grand_prix)
+        image_data = f1_data_race.get_driver_laptime_comparison(grand_prix)
     
     elif graph_type == "Tyre Strategies During a Race":
-        image_data = f1_data.get_tyre_strategies(grand_prix)
+        image_data = f1_data_race.get_tyre_strategies(grand_prix)
 
     else:
         return "Graph type not supported", 400

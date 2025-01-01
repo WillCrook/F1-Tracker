@@ -67,6 +67,50 @@ class F1Data:
     def get_last_grand_prix(self):
         return self.previous_round_number
 
+    def get_upcoming_grand_prix_info(self):
+        #upcoming Grand Prix works by always returning the "error retrieving upcoming Grand Prix info"
+        #if there is any issue to the user. I have also implemented logs throughout so that the admin can
+        #can see on there end where the problem actually lies. This would show whether its an API issue or it's just because its the end of the season. 
+
+        logger.info("Retrieving upcoming Grand Prix info...")
+        
+        #check to see if there is an upcoming Grand Prix
+        if not self.upcoming_event:
+            logger.error("No upcoming event available.")
+            return ["No Upcoming Grand Prix"]
+
+        try:
+            upcoming_event = self.upcoming_event
+            date = upcoming_event.get('EventDate')
+
+            if not date:
+                logger.error("Missing 'EventDate' in upcoming event.")
+                return ["Error retrieving upcoming Grand Prix info"]
+
+            #load previous session info
+            try:
+                last_circuit_info = fastf1.get_session(date.year - 1, upcoming_event['EventName'], 'R')
+                last_circuit_info.load(laps=True, telemetry=False, weather=False, messages=False)
+
+                
+                fastest_lap = last_circuit_info.laps.pick_fastest().to_dict()
+                logger.info(f"Fastest lap details: Driver={fastest_lap.get('Driver', 'N/A')}, LapTime={fastest_lap.get('LapTime', 'N/A')}")
+            except Exception as e:
+                logger.error(f"Error loading last session info: {e}")
+
+            for element in ['EventName', 'Location', 'RoundNumber', 'EventDate']:
+                logger.info(f"{element}: {upcoming_event.get(element, 'N/A')}")
+
+        except Exception as e:
+            logger.error(f"Error in get_upcoming_grand_prix_info: {e}")
+
+        return ["Error retrieving upcoming Grand Prix info"]
+    
+class F1RaceData(F1Data):  
+
+    def __init__(self):
+        super().__init__()
+
     def get_positions_change_during_a_race(self, grand_prix):
         fastf1.plotting.setup_mpl(mpl_timedelta_support=True, misc_mpl_mods=False,
                           color_scheme='fastf1')
@@ -79,14 +123,14 @@ class F1Data:
         fig, ax = plt.subplots(figsize=(15, 10))
 
         #plot driver positions
-        for drv in session.drivers:
-            drv_laps = session.laps.pick_driver(drv)
-            abb = drv_laps['Driver'].iloc[0]  # Get driver abbreviation
+        for driver in session.drivers:
+            driver_laps = session.laps.pick_driver(drv)
+            abb = driver_laps['Driver'].iloc[0]  # Get driver abbreviation
             style = fastf1.plotting.get_driver_style(identifier=abb,
                                              style=['color', 'linestyle'],
                                              session=session)
             
-            ax.plot(drv_laps['LapNumber'], drv_laps['Position'], label=abb, **style)
+            ax.plot(driver_laps['LapNumber'], driver_laps['Position'], label=abb, **style)
 
         #customize the plot axis
         ax.set_ylim([20.5, 0.5])
@@ -94,57 +138,6 @@ class F1Data:
         ax.set_xlabel('Lap')
         ax.set_ylabel('Position')
         ax.legend(bbox_to_anchor=(1.0, 1.02))
-
-        buf = BytesIO()
-        fig.savefig(buf, format="png")
-        buf.seek(0)
-        plt.close(fig)
-        return buf
-    
-    def get_quali_results_overview(self, grand_prix):
-        fastf1.plotting.setup_mpl(mpl_timedelta_support=True, misc_mpl_mods=False,
-                          color_scheme='fastf1')
-        
-        session = fastf1.get_session(self.year, grand_prix, 'Q')
-        session.load()
-        drivers = pd.unique(session.laps['Driver'])
-        logger.debug(drivers)
-
-        list_fastest_laps = list()
-        for drv in drivers:
-            drvs_fastest_lap = session.laps.pick_driver(drv).pick_fastest()
-            list_fastest_laps.append(drvs_fastest_lap)
-
-        fastest_laps = Laps(list_fastest_laps) \
-            .sort_values(by='LapTime') \
-            .reset_index(drop=True)
-        pole_lap = fastest_laps.pick_fastest()
-        fastest_laps['LapTimeDelta'] = fastest_laps['LapTime'] - pole_lap['LapTime']
-        logger.debug(fastest_laps[['Driver', 'LapTime', 'LapTimeDelta']])
-
-        team_colors = list()
-        for index, lap in fastest_laps.iterlaps():
-            color = fastf1.plotting.get_team_color(lap['Team'], session=session)
-            team_colors.append(color)
-
-        fig, ax = plt.subplots(figsize=(15, 10))
-
-        ax.barh(fastest_laps.index, fastest_laps['LapTimeDelta'],
-                color=team_colors, edgecolor='grey')
-        ax.set_yticks(fastest_laps.index)
-        ax.set_yticklabels(fastest_laps['Driver'])
-
-        #show fastest at the top
-        ax.invert_yaxis()
-
-        #draw vertical lines behind the bars
-        ax.set_axisbelow(True)
-        ax.xaxis.grid(True, which='major', linestyle='--', color='black', zorder=-1000)
-
-        lap_time_string = strftimedelta(pole_lap['LapTime'], '%m:%s.%ms')
-
-        plt.suptitle(f"{session.event['EventName']} {session.event.year} Qualifying\n"
-                    f"Fastest Lap: {lap_time_string} ({pole_lap['Driver']})")
 
         buf = BytesIO()
         fig.savefig(buf, format="png")
@@ -201,63 +194,6 @@ class F1Data:
         #x axis is doesn't do anything for team pace comparison as it is just a comparison
         ax.set(xlabel=None)
         plt.tight_layout()
-        buf = BytesIO()
-        fig.savefig(buf, format="png")
-        buf.seek(0)
-        plt.close(fig)
-        return buf
-
-    def get_gear_shifts(self,grand_prix):
-        
-        #enable Matplotlib patches for plotting timedelta values and load
-        #load FastF1's dark color scheme to fit colour scheme
-        fastf1.plotting.setup_mpl(mpl_timedelta_support=False, misc_mpl_mods=False,
-                            color_scheme='fastf1')
-        session = fastf1.get_session(self.year, grand_prix, 'Q')
-        session.load()
-
-        lap = session.laps.pick_fastest()
-        tel = lap.get_telemetry()
-       
-        #prepare the data for plotting by converting it to the appropriate numpy data types
-
-        x = np.array(tel['X'].values)
-        y = np.array(tel['Y'].values)
-
-        points = np.array([x, y]).T.reshape(-1, 1, 2)
-        segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        gear = tel['nGear'].to_numpy().astype(float)
-
-        #create figure and axis
-        fig, ax = plt.subplots(figsize=(15, 10))
-    
-        #create a line collection. Set a segmented colormap and normalize the plot
-        #to full integer values of the colormap
-
-        cmap = colormaps['Paired']
-        lc_comp = LineCollection(segments, norm=plt.Normalize(1, cmap.N+1), cmap=cmap)
-        lc_comp.set_array(gear)
-        lc_comp.set_linewidth(4)
-
-        #plot        
-        plt.gca().add_collection(lc_comp)
-        plt.axis('equal')
-        plt.tick_params(labelleft=False, left=False, labelbottom=False, bottom=False)
-
-        plt.suptitle(
-            f"Fastest Lap Gear Shift Visualization\n"
-            f"{lap['Driver']} - {session.event['EventName']} {session.event.year}"
-        )
-        
-        #add a colorbar to the plot. Shift the colorbar ticks by +0.5 so that they
-        #are centered for each color segment.
-
-        cbar = plt.colorbar(mappable=lc_comp, label="Gear",
-                            boundaries=np.arange(1, 10))
-        cbar.set_ticks(np.arange(1.5, 9.5))
-        cbar.set_ticklabels(np.arange(1, 9))
-
-
         buf = BytesIO()
         fig.savefig(buf, format="png")
         buf.seek(0)
@@ -391,51 +327,115 @@ class F1Data:
         buf.seek(0)
         plt.close(fig)
         return buf
-    
-    def get_upcoming_grand_prix_info(self):
-        #upcoming Grand Prix works by always returning the "error retrieving upcoming Grand Prix info"
-        #if there is any issue to the user. I have also implemented logs throughout so that the admin can
-        #can see on there end where the problem actually lies. This would show whether its an API issue or it's just because its the end of the season. 
-
-        logger.info("Retrieving upcoming Grand Prix info...")
-        
-        #check to see if there is an upcoming Grand Prix
-        if not self.upcoming_event:
-            logger.error("No upcoming event available.")
-            return ["No Upcoming Grand Prix"]
-
-        try:
-            upcoming_event = self.upcoming_event
-            date = upcoming_event.get('EventDate')
-
-            if not date:
-                logger.error("Missing 'EventDate' in upcoming event.")
-                return ["Error retrieving upcoming Grand Prix info"]
-
-            #load previous session info
-            try:
-                last_circuit_info = fastf1.get_session(date.year - 1, upcoming_event['EventName'], 'R')
-                last_circuit_info.load(laps=True, telemetry=False, weather=False, messages=False)
-
-                
-                fastest_lap = last_circuit_info.laps.pick_fastest().to_dict()
-                logger.info(f"Fastest lap details: Driver={fastest_lap.get('Driver', 'N/A')}, LapTime={fastest_lap.get('LapTime', 'N/A')}")
-            except Exception as e:
-                logger.error(f"Error loading last session info: {e}")
-
-            for element in ['EventName', 'Location', 'RoundNumber', 'EventDate']:
-                logger.info(f"{element}: {upcoming_event.get(element, 'N/A')}")
-
-        except Exception as e:
-            logger.error(f"Error in get_upcoming_grand_prix_info: {e}")
-
-        return ["Error retrieving upcoming Grand Prix info"]
-    
-class F1RaceData(F1Data):  
-    def __init__(self):
-        super().__init__()
-
 
 class F1QualiData(F1Data):
+
     def __init__(self):
         super().__init__()
+
+    def get_quali_results_overview(self, grand_prix):
+        fastf1.plotting.setup_mpl(mpl_timedelta_support=True, misc_mpl_mods=False, color_scheme='fastf1')
+        
+        session = fastf1.get_session(self.year, grand_prix, 'Q')
+        session.load()
+        drivers = pd.unique(session.laps['Driver'])
+        logger.debug(drivers)
+
+        list_fastest_laps = list()
+        for drv in drivers:
+            drvs_fastest_lap = session.laps.pick_driver(drv).pick_fastest()
+            list_fastest_laps.append(drvs_fastest_lap)
+
+        fastest_laps = Laps(list_fastest_laps) \
+            .sort_values(by='LapTime') \
+            .reset_index(drop=True)
+        pole_lap = fastest_laps.pick_fastest()
+        fastest_laps['LapTimeDelta'] = fastest_laps['LapTime'] - pole_lap['LapTime']
+        logger.debug(fastest_laps[['Driver', 'LapTime', 'LapTimeDelta']])
+
+        team_colors = list()
+        for index, lap in fastest_laps.iterlaps():
+            color = fastf1.plotting.get_team_color(lap['Team'], session=session)
+            team_colors.append(color)
+
+        fig, ax = plt.subplots(figsize=(15, 10))
+
+        ax.barh(fastest_laps.index, fastest_laps['LapTimeDelta'],
+                color=team_colors, edgecolor='grey')
+        ax.set_yticks(fastest_laps.index)
+        ax.set_yticklabels(fastest_laps['Driver'])
+
+        #show fastest at the top
+        ax.invert_yaxis()
+
+        #draw vertical lines behind the bars
+        ax.set_axisbelow(True)
+        ax.xaxis.grid(True, which='major', linestyle='--', color='black', zorder=-1000)
+
+        lap_time_string = strftimedelta(pole_lap['LapTime'], '%m:%s.%ms')
+
+        plt.suptitle(f"{session.event['EventName']} {session.event.year} Qualifying\n"
+                    f"Fastest Lap: {lap_time_string} ({pole_lap['Driver']})")
+
+        buf = BytesIO()
+        fig.savefig(buf, format="png")
+        buf.seek(0)
+        plt.close(fig)
+        return buf
+    
+    def get_gear_shifts(self,grand_prix):
+        
+        #enable Matplotlib patches for plotting timedelta values and load
+        #load FastF1's dark color scheme to fit colour scheme
+        fastf1.plotting.setup_mpl(mpl_timedelta_support=False, misc_mpl_mods=False,
+                            color_scheme='fastf1')
+        session = fastf1.get_session(self.year, grand_prix, 'Q')
+        session.load()
+
+        lap = session.laps.pick_fastest()
+        tel = lap.get_telemetry()
+       
+        #prepare the data for plotting by converting it to the appropriate numpy data types
+
+        x = np.array(tel['X'].values)
+        y = np.array(tel['Y'].values)
+
+        points = np.array([x, y]).T.reshape(-1, 1, 2)
+        segments = np.concatenate([points[:-1], points[1:]], axis=1)
+        gear = tel['nGear'].to_numpy().astype(float)
+
+        #create figure and axis
+        fig, ax = plt.subplots(figsize=(15, 10))
+    
+        #create a line collection. Set a segmented colormap and normalize the plot
+        #to full integer values of the colormap
+
+        cmap = colormaps['Paired']
+        lc_comp = LineCollection(segments, norm=plt.Normalize(1, cmap.N+1), cmap=cmap)
+        lc_comp.set_array(gear)
+        lc_comp.set_linewidth(4)
+
+        #plot        
+        plt.gca().add_collection(lc_comp)
+        plt.axis('equal')
+        plt.tick_params(labelleft=False, left=False, labelbottom=False, bottom=False)
+
+        plt.suptitle(
+            f"Fastest Lap Gear Shift Visualization\n"
+            f"{lap['Driver']} - {session.event['EventName']} {session.event.year}"
+        )
+        
+        #add a colorbar to the plot. Shift the colorbar ticks by +0.5 so that they
+        #are centered for each color segment.
+
+        cbar = plt.colorbar(mappable=lc_comp, label="Gear",
+                            boundaries=np.arange(1, 10))
+        cbar.set_ticks(np.arange(1.5, 9.5))
+        cbar.set_ticklabels(np.arange(1, 9))
+
+
+        buf = BytesIO()
+        fig.savefig(buf, format="png")
+        buf.seek(0)
+        plt.close(fig)
+        return buf
