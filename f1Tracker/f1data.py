@@ -430,3 +430,12 @@ class F1Data:
             logger.error(f"Error in get_upcoming_grand_prix_info: {e}")
 
         return ["Error retrieving upcoming Grand Prix info"]
+    
+class F1RaceData(F1Data):  
+    def __init__(self):
+        super().__init__()
+
+
+class F1QualiData(F1Data):
+    def __init__(self):
+        super().__init__()

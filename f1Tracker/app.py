@@ -528,16 +528,17 @@ def getUpcomingGrandPrixInfo():
 
 #cache again used otherwise the processing would be through the roof
 
-@cache.cached(timeout=3600, key_prefix='driver_rankings_quali')
+@cache.cached(timeout=432000, key_prefix='driver_rankings_quali')
 def driverRankingsRace():
     rankings, accuracy = ml.getRacePredictions()
     return [rankings, accuracy]
         
-def qualiResults():
-    return [
-        "Top Speed: Charles Leclerc"
-    ]
-@cache.cached(timeout=3600, key_prefix='generate-graph')
+@cache.cached(timeout=432000, key_prefix='driver_rankings_quali')
+def driverRankingsQuali():
+    rankings, accuracy = ml.getQualiPredictions()
+    return [rankings, accuracy]
+
+@cache.cached(timeout=None, key_prefix='generate-graph')
 @app.route('/generate-graph', methods=['GET'])
 def generate_graph():
     graph_type = request.args.get('graphType')
@@ -691,11 +692,12 @@ def get_team_logo():
 def get_payload():
 
     payload = {
-        'qualiresults': qualiResults(), # api
-        'driverrankingsrace': driverRankingsRace()[0], # db / ML
+        'driverrankingsrace': driverRankingsRace()[0], #ML
+        'predictionaccuracyrace' : str(driverRankingsRace()[1]) + "%", # ML 
+        'driverrankingsquali' : driverRankingsQuali()[0], # ML
+        'predictionaccuracyquali' : str(driverRankingsRace()[1]) + '%', #ML
         'upcominggrandprixlist': getUpcomingGrandPrixInfo(), # api 
         'practiseresults' : practiseResults(), # api
-        'predictionaccuracy' : str(driverRankingsRace()[1]) + "%", # ML note that prediction accuracy is dRR[1] 
         'signedin' : getSignedIn(), #session
         'graphtypes': getGraphTypes(), #f1data
         'grandprixlist': f1_data.get_events(),  # Grand Prix events from f1data.py

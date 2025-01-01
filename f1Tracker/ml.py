@@ -168,7 +168,8 @@ def XGBoost_model_train(X, Y, test_size=0.2, cv=10):
     model = xgb.XGBClassifier(objective="multi:softmax", num_class=len(set(Y)), random_state=42)
 
     #cross-validation to evaluate model performance so I can give a certaincy
-    cv_scores = cross_val_score(model, X, Y, cv=cv, scoring='accuracy') #certaincy
+    #this is how accurate the model has been when testing itself to the actual dataset
+    cv_scores = cross_val_score(model, X, Y, cv=cv, scoring='accuracy') 
     #log the accuracy so I can see it from the terminal 
     logger.debug("Mean Accuracy:", np.mean(cv_scores)) #so I can see improvements if I change the datapoints/model
 
@@ -179,7 +180,7 @@ def XGBoost_model_train(X, Y, test_size=0.2, cv=10):
     return model, accuracy
 
 def getRacePredictions():
-    #data = X, target = y
+    #features for race
     X = dataframe[['startingPosition', 'driverExpYears', 'meanPace', 'maxPace']]  # Select features
     Y_position = dataframe["racePosition"] - 1
 
@@ -222,7 +223,52 @@ def getRacePredictions():
         
     return predictions_output, accuracy
 
+def getQualiPredictions():
+    #features for quali
+    X = dataframe[['driverExpYears', 'meanPace', 'maxPace']]  # Select relevant features for quali
+    Y_position = dataframe["qualiResultPosition"] - 1  # Target is the qualifying position
+
+    #run the machine learning model
+    model, accuracy = XGBoost_model_train(X, Y_position)
+
+    #map driver IDs to their codes for output
+    df_drivers['driverCode'] = df_drivers['code']
+    driver_id_to_code = df_drivers.set_index('driverId')['driverCode'].to_dict()
+
+    #predict qualifying positions
+    X_test = X.tail(20)
+    X_full = dataframe.tail(20)
+    X_full['predict'] = model.predict(X_test) + 1  #revert to original qualifying positions
+
+    #create a list of dictionaries for driver predictions with rank for the output
+    predictions_output = []
+
+    for idx, row in X_full.iterrows():
+        driver_id = row['driverId']
+        driver_code = driver_id_to_code.get(driver_id, "Unknown Driver")
+        predicted_position = row['predict']
+
+        driver_prediction = {
+            'driver': driver_code,
+            'qualifying_rank': str(predicted_position)
+        }
+
+        predictions_output.append(driver_prediction)
+
+    predictions_output.sort(key=lambda driver_prediction: int(driver_prediction['qualifying_rank']))
+
+    #adjust ranking order to avoid duplicates
+    num = 1
+    for i in predictions_output:
+        i['qualifying_rank'] = num
+        num += 1
+
+    return predictions_output, accuracy
+
+#This is purely for debugging and testing and has nothing to do with the main flask application. 
+#it was just so I didn't have to start the entire flask app everytime
 if __name__ == '__main__':
     logger.info('Starting up...')
     logger.info(getRacePredictions())
+    logger.info(getQualiPredictions())
     logger.info('Shutting down...')
