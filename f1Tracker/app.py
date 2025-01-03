@@ -2,7 +2,6 @@ from flask import Flask, render_template, send_from_directory, session, request,
 from f1Tracker import db
 from f1Tracker import f1data
 from werkzeug.security import generate_password_hash, check_password_hash
-from f1Tracker import ml
 from flask_caching import Cache
 from flask_mail import Mail, Message
 import os
@@ -31,9 +30,10 @@ cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 app.secret_key = b'9417b2d7beab235eae274c28716b73e3c06fcb9a898bd4a930301cc4c3a2df9d'
 
 signedIn = False
-f1_data = f1data.F1Data()
+
 f1_data_race = f1data.F1RaceData()
 f1_data_quali = f1data.F1QualiData()
+f1_data_upcoming = f1data.F1UpcomingData()
 
 def send_verification_email(email, token):
     emailMessage = Message('Your Verification Code', recipients=[email])
@@ -523,23 +523,36 @@ def merge(left, right, key):
     return result
 
 
-#cache used to enhance performance of the website
-@cache.cached(timeout=432000, key_prefix='upcoming_grand_prix')
+#cache used to enhance performance of the website when calling all the data from the api from f1data.py
+#For the first 4 they only needed to be updated between every grand prix which is at least 5 days hence the 432000 seconds
+@cache.cached(timeout=432000, key_prefix='upcoming_grand_prix_info')
 def getUpcomingGrandPrixInfo():
-    return f1_data.get_upcoming_grand_prix_info()
+    return f1_data_upcoming.get_upcoming_grand_prix_info()
 
-#cache again used otherwise the processing would be through the roof
+@cache.cached(timeout=432000, key_prefix='grand_prix_list')
+def getGrandPrixList():
+    return f1_data_race.get_events()
 
+@cache.cached(timeout=432000, key_prefix='upcoming_grand_prix_date')
+def getUpcomingGrandPrixDate():
+    return f1_data_upcoming.get_countdown_date()
+
+@cache.cached(timeout=432000, key_prefix='upcoming_grand_prix_name')
+def getUpcomingGrandPrix():
+    return f1_data_upcoming.get_upcoming_grand_prix()
+
+#for the predictions they can change as soon as the database from ergast is updated which is why they refresh every hour 
 @cache.cached(timeout=3600, key_prefix='driver_rankings_race')
 def driverRankingsRace():
-    rankings, accuracy = ml.getRacePredictions()
+    rankings, accuracy = f1_data_race.predictions()
     return [rankings, accuracy]
         
 @cache.cached(timeout=3600, key_prefix='driver_rankings_quali')
 def driverRankingsQuali():
-    rankings, accuracy = ml.getQualiPredictions()
+    rankings, accuracy = f1_data_quali.predictions()
     return [rankings, accuracy]
 
+#the data for the graphs never needs to be changed once created and so can be cached indefinitely
 @cache.cached(timeout=None, key_prefix='generate-graph')
 @app.route('/generate-graph', methods=['GET'])
 def generate_graph():
@@ -624,10 +637,10 @@ def getSignedIn():
 def send_newsletter():
     try:
         #get graphs
-        grand_prix = f1_data.get_last_grand_prix()
-        position_change_graph = f1_data.get_positions_change_during_a_race(grand_prix)
-        quali_results_graph = f1_data.get_quali_results_overview(grand_prix)
-        team_pace_comparison_graph = f1_data.get_team_pace_comparison(grand_prix)
+        grand_prix = f1_data_race.get_last_grand_prix()
+        position_change_graph = f1_data_race.get_positions_change_during_a_race(grand_prix)
+        quali_results_graph = f1_data_quali.get_quali_results_overview(grand_prix)
+        team_pace_comparison_graph = f1_data_race.get_team_pace_comparison(grand_prix)
 
         #list of graphs to be attached
         graphs = [
@@ -690,13 +703,15 @@ def get_payload():
         'predictionaccuracyrace' : str(driverRankingsRace()[1]) + "%", # ML 
         'driverrankingsquali' : driverRankingsQuali()[0], # ML
         'predictionaccuracyquali' : str(driverRankingsRace()[1]) + '%', #ML
-        'upcominggrandprixlist': getUpcomingGrandPrixInfo(), # api 
+        'upcominggrandprixlist': getUpcomingGrandPrixInfo(), #f1data 
         'signedin' : getSignedIn(), #session
         'graphtypes': getGraphTypes(), #f1data
-        'grandprixlist': f1_data.get_events(),  # Grand Prix events from f1data.py
-        'isadmin' : get_admin(), 
-        'graph_recommendations' : get_graph_recommendations(3),
-        'profilepicture' : get_team_logo()
+        'grandprixlist': getGrandPrixList(),  #f1data
+        'isadmin' : get_admin(), #db
+        'graph_recommendations' : get_graph_recommendations(3), #db
+        'profilepicture' : get_team_logo(), #session/db
+        'upcominggrandprixdate' : getUpcomingGrandPrixDate(), #f1data
+        'upcominggrandprix' : getUpcomingGrandPrix() #f1data
     }
 
     return payload

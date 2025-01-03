@@ -112,6 +112,33 @@
         });
         toastList.forEach(toast => toast.show());
       });
+
+      //Countdown function
+      var eventDate = new Date("{{ data.upcominggrandprixdate }}").getTime();  //set to JavaScript Date
+
+        function startCountdown() {
+            var now = new Date().getTime(); //get the time from the user's browser
+            var distance = eventDate - now;
+
+            //calculate days, hours, minutes, and seconds
+            var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            //display the countdown
+            document.getElementById("countdown").innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s ";
+
+            //if the countdown is over then display race is live message
+            if (distance < 0) {
+                clearInterval(x); //stop the countdown
+                document.getElementById("countdown").innerHTML = "{{ data.upcominggrandprix }} IS LIVE!";
+            }
+        }
+
+        // Update the countdown every second
+        var x = setInterval(startCountdown, 1000);
+
     </script>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -208,6 +235,10 @@
 
       <!-- Upcoming Grand Prix -->
       <section class="mb-5">
+        <div class="container text-center mt-5">
+          <h1>Countdown to the F1 {{ data.upcominggrandprix }}</h1>
+          <div id="countdown" class="display-3 mt-4"></div>
+      </div>
         <h2>Upcoming Grand Prix</h2>
         <ul class="list-group">
           {% for item in data.upcominggrandprixlist %}

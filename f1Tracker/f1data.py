@@ -1,4 +1,5 @@
 import fastf1
+import fastf1.mvapi
 from loguru import logger
 from datetime import datetime
 import pandas as pd
@@ -14,11 +15,14 @@ import seaborn as sns
 import numpy as np
 from matplotlib import colormaps
 from matplotlib.collections import LineCollection
+from abc import ABC, abstractmethod
+from f1Tracker import ml
+from datetime import timedelta
 
 #set matplotlib to non GUI to save resources
 matplotlib.use('Agg')
 
-class F1Data:
+class F1Data(ABC):
     def __init__(self):
         try:
             #set the year 
@@ -28,6 +32,7 @@ class F1Data:
             remaining_events = fastf1.get_events_remaining()
             if not remaining_events.empty:
                 self.upcoming_event = remaining_events.iloc[0].to_dict()
+                logger.info(f"The upcoming event {self.upcoming_event} is being used")
             else:
                 self.upcoming_event = None
                 logger.warning("No upcoming events found.")
@@ -42,8 +47,8 @@ class F1Data:
                 logger.warning("Unable to get events.")
 
             #calculate the previous round number 
-            #if there is no upcoming event then the last event gets picked
-            if self.upcoming_event == None:
+            #if there is no upcoming event or the upcoming event is into the next season then the last event gets picked
+            if (self.upcoming_event == None) or ("2025" in str(self.upcoming_event.get("EventDate", 'N/A'))):
                 self.previous_round_number = list(self.events.keys())[-1]
             else:
                 self.previous_round_number = (self.upcoming_event.get('RoundNumber', 1) - 1)
@@ -57,66 +62,45 @@ class F1Data:
     def get_events(self):
         try:
             #filter and reverse events
-            event = [event for round, event in self.events.items() if 0 < round <= self.previous_round_number]
+            event = []
+            for round_number, event_data in self.events.items():
+                if 0 < round_number <= self.previous_round_number:
+                     event.append(event_data)
             event.reverse()
+
+            logger.info(f"Events for graphs: {event}")
             return event
+        
         except Exception as e:
             logger.error(f"Error in get_events: {e}")
             return ["Error retrieving events"]
 
     def get_last_grand_prix(self):
         return self.previous_round_number
-
-    def get_upcoming_grand_prix_info(self):
-        #upcoming Grand Prix works by always returning the "error retrieving upcoming Grand Prix info"
-        #if there is any issue to the user. I have also implemented logs throughout so that the admin can
-        #can see on there end where the problem actually lies. This would show whether its an API issue or it's just because its the end of the season. 
-
-        logger.info("Retrieving upcoming Grand Prix info...")
-        
-        #check to see if there is an upcoming Grand Prix
-        if not self.upcoming_event:
-            logger.error("No upcoming event available.")
-            return ["No Upcoming Grand Prix"]
-
-        try:
-            upcoming_event = self.upcoming_event
-            date = upcoming_event.get('EventDate')
-
-            if not date:
-                logger.error("Missing 'EventDate' in upcoming event.")
-                return ["Error retrieving upcoming Grand Prix info"]
-
-            #load previous session info
-            try:
-                last_circuit_info = fastf1.get_session(date.year - 1, upcoming_event['EventName'], 'R')
-                last_circuit_info.load(laps=True, telemetry=False, weather=False, messages=False)
-
-                
-                fastest_lap = last_circuit_info.laps.pick_fastest().to_dict()
-                logger.info(f"Fastest lap details: Driver={fastest_lap.get('Driver', 'N/A')}, LapTime={fastest_lap.get('LapTime', 'N/A')}")
-            except Exception as e:
-                logger.error(f"Error loading last session info: {e}")
-
-            for element in ['EventName', 'Location', 'RoundNumber', 'EventDate']:
-                logger.info(f"{element}: {upcoming_event.get(element, 'N/A')}")
-
-        except Exception as e:
-            logger.error(f"Error in get_upcoming_grand_prix_info: {e}")
-
-        return ["Error retrieving upcoming Grand Prix info"]
+    
+    @abstractmethod
+    def predictions(self):
+        """
+        Abstract method for making the machine learning predictions for both the race and quali
+        Must be implemented by subclasses
+        """
+        pass
     
 class F1RaceData(F1Data):  
 
     def __init__(self):
         super().__init__()
+        self.session_type = 'R'
+
+    def predictions(self):
+        return ml.getRacePredictions()
 
     def get_positions_change_during_a_race(self, grand_prix):
         fastf1.plotting.setup_mpl(mpl_timedelta_support=True, misc_mpl_mods=False,
                           color_scheme='fastf1')
         
         #load the session for the current round
-        session = fastf1.get_session(self.year, grand_prix, 'R')
+        session = fastf1.get_session(self.year, grand_prix, self.session_type)
         session.load(telemetry=False, weather=False)
 
         #create the figure and axis
@@ -125,12 +109,12 @@ class F1RaceData(F1Data):
         #plot driver positions
         for driver in session.drivers:
             driver_laps = session.laps.pick_driver(driver)
-            abb = driver_laps['Driver'].iloc[0]  # Get driver abbreviation
-            style = fastf1.plotting.get_driver_style(identifier=abb,
+            driver_code = driver_laps['Driver'].iloc[0]  # Get driver abbreviation
+            style = fastf1.plotting.get_driver_style(identifier=driver_code,
                                              style=['color', 'linestyle'],
                                              session=session)
             
-            ax.plot(driver_laps['LapNumber'], driver_laps['Position'], label=abb, **style)
+            ax.plot(driver_laps['LapNumber'], driver_laps['Position'], label=driver_code, **style)
 
         #customize the plot axis
         ax.set_ylim([20.5, 0.5])
@@ -152,7 +136,7 @@ class F1RaceData(F1Data):
         
         #choose race laps (within 107% of fastest lap so that slow laps don't skew the data).
         #for races with mixed conditions the slowest part of the session will be excluded
-        race = fastf1.get_session(self.year, grand_prix, 'R')
+        race = fastf1.get_session(self.year, grand_prix, self.session_type)
         race.load()
         laps = race.laps.pick_quicklaps()
 
@@ -209,7 +193,7 @@ class F1RaceData(F1Data):
 
         #load the race session
 
-        race = fastf1.get_session(self.year, grand_prix , 'R')
+        race = fastf1.get_session(self.year, grand_prix , self.session_type)
         race.load()
 
   
@@ -266,7 +250,7 @@ class F1RaceData(F1Data):
     def get_tyre_strategies(self, grand_prix):
 
         #load the race session
-        session = fastf1.get_session(self.year, grand_prix, 'R')
+        session = fastf1.get_session(self.year, grand_prix, self.session_type)
         session.load()
         laps = session.laps
 
@@ -332,11 +316,15 @@ class F1QualiData(F1Data):
 
     def __init__(self):
         super().__init__()
+        self.session_type = 'Q'
+
+    def predictions(self):
+        return ml.getQualiPredictions()
 
     def get_quali_results_overview(self, grand_prix):
         fastf1.plotting.setup_mpl(mpl_timedelta_support=True, misc_mpl_mods=False, color_scheme='fastf1')
         
-        session = fastf1.get_session(self.year, grand_prix, 'Q')
+        session = fastf1.get_session(self.year, grand_prix, self.session_type)
         session.load()
         drivers = pd.unique(session.laps['Driver'])
         logger.debug(drivers)
@@ -389,7 +377,7 @@ class F1QualiData(F1Data):
         #load FastF1's dark color scheme to fit colour scheme
         fastf1.plotting.setup_mpl(mpl_timedelta_support=False, misc_mpl_mods=False,
                             color_scheme='fastf1')
-        session = fastf1.get_session(self.year, grand_prix, 'Q')
+        session = fastf1.get_session(self.year, grand_prix, self.session_type)
         session.load()
 
         lap = session.laps.pick_fastest()
@@ -439,3 +427,90 @@ class F1QualiData(F1Data):
         buf.seek(0)
         plt.close(fig)
         return buf
+
+#this allows other classes to use the F1Data class without having to implement the predictions method
+class CoreF1Data(F1Data):
+    def predictions(self):
+        #placeholder implementation to allow other classes to use F1Data without the predictions method
+        pass
+
+class F1UpcomingData():
+    def __init__(self):
+        self.f1_data = CoreF1Data()
+
+    def get_upcoming_grand_prix(self):
+        return self.f1_data.upcoming_event.get('EventName', 'N/A')
+
+    def get_countdown_date(self):
+        return self.f1_data.upcoming_event.get('EventDate', 'N/A')
+
+    def get_upcoming_grand_prix_info(self):
+        #upcoming Grand Prix works by always returning the "error retrieving upcoming Grand Prix info"
+        #if there is any issue to the user. I have also implemented logs throughout so that the admin can
+        #can see on there end where the problem actually lies. This would show whether its an API issue or it's just because its the end of the season. 
+        logger.info("Retrieving upcoming Grand Prix info...")
+        
+        #check to see if there is an upcoming Grand Prix
+        if not self.f1_data.upcoming_event:
+            logger.error("No upcoming event available.")
+            return ["No Upcoming Grand Prix Avalaible"]
+
+        try:
+            upcoming_event = self.f1_data.upcoming_event
+            date = upcoming_event.get('EventDate', 'N/A')
+
+            if not date:
+                logger.error("Missing 'EventDate' in upcoming event.")
+                return ["Error retrieving upcoming Grand Prix info"]
+
+            
+            try:
+                if "Testing" in upcoming_event.get('EventName', 'N/A'):
+                    test_number = 1  
+                    session_number = 1  
+                    testing_session = fastf1.get_testing_session(self.f1_data.year, test_number, session_number)
+                    testing_session.load(laps=True, telemetry=False, weather=False, messages=False)
+                    fastest_lap = testing_session.laps.pick_fastest().to_dict()
+                    lap_time = fastest_lap.get('LapTime', 'N/A')
+                    circuit_info = testing_session.get_circuit_info()
+                    corners = circuit_info.corners
+                    corner_count = len(corners)
+                    
+                else:
+                    last_circuit_info = fastf1.get_session((int(self.f1_data.year)), upcoming_event['RoundNumber'], 'R')
+                    last_circuit_info.load(laps=True, telemetry=False, weather=False, messages=False)
+                    fastest_lap = last_circuit_info.laps.pick_fastest().to_dict()
+                    lap_time = fastest_lap.get('LapTime', 'N/A')
+                    circuit_info = last_circuit_info.get_circuit_info()
+                    corners = circuit_info.corners
+                    corner_count = len(corners)
+                
+
+                #convert to how it would look like a standard laptime in F1
+                if isinstance(lap_time, timedelta):
+                    minutes = lap_time.seconds // 60
+                    seconds = lap_time.seconds % 60
+                    milliseconds = lap_time.microseconds // 1000
+                    formatted_time = f"{minutes}:{seconds}.{milliseconds:03}"
+                else:
+                    formatted_time = 'N/A'
+                
+                
+                
+            except Exception as e:
+                logger.error(f"Error loading last session info: {e}")
+
+            return [
+                    f"Event Name: {upcoming_event.get('EventName', 'N/A')}",
+                    f"Event Date: {upcoming_event.get('EventDate', 'N/A')}",
+                    f"Location: {upcoming_event.get('Location', 'N/A')}",
+                    f"Round Number: {upcoming_event.get('RoundNumber', 'N/A')}",
+                    f"Fastest Driver last year was {fastest_lap.get('Driver', 'N/A')} with a time of: {formatted_time}",
+                    f"Number of Corners: {corner_count}"
+                    ]
+
+
+        except Exception as e:
+            logger.error(f"Error in get_upcoming_grand_prix_info: {e}")
+
+        return ["Error retrieving upcoming Grand Prix info"]
