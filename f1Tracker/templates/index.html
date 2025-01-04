@@ -264,7 +264,7 @@
               </button>
               <ul class="dropdown-menu">
                 {% for graphtype in data.graphtypes %}
-                  <li><a class="dropdown-item" href="#" onclick="updateDropdownText('graphTypeButton', '{{ graphtype }}')">{{ graphtype }}</a></li>
+                  <li><button class="dropdown-item" onclick="updateDropdownText('graphTypeButton', '{{ graphtype }}')">{{ graphtype }}</button></li>
                 {% endfor %}
               </ul>
             </div>
@@ -274,7 +274,7 @@
               </button>
               <ul class="dropdown-menu">
                 {% for gp in data.grandprixlist %}
-                  <li><a class="dropdown-item" href="#" onclick="updateDropdownText('grandPrixButton', '{{ gp }}')">{{ gp }}</a></li>
+                  <li><button class="dropdown-item" onclick="updateDropdownText('grandPrixButton', '{{ gp }}')">{{ gp }}</button></li>
                 {% endfor %}
               </ul>
             </div>

@@ -123,6 +123,9 @@ class F1RaceData(F1Data):
         ax.set_ylabel('Position')
         ax.legend(bbox_to_anchor=(1.0, 1.02))
 
+        #set title
+        plt.suptitle(f"{session.event['EventName']} {self.year} Positions Changed During a Race")
+
         buf = BytesIO()
         fig.savefig(buf, format="png")
         buf.seek(0)
@@ -136,9 +139,9 @@ class F1RaceData(F1Data):
         
         #choose race laps (within 107% of fastest lap so that slow laps don't skew the data).
         #for races with mixed conditions the slowest part of the session will be excluded
-        race = fastf1.get_session(self.year, grand_prix, self.session_type)
-        race.load()
-        laps = race.laps.pick_quicklaps()
+        session = fastf1.get_session(self.year, grand_prix, self.session_type)
+        session.load()
+        laps = session.laps.pick_quicklaps()
 
         #convert the lap time column from timedelta to integer.
         transformed_laps = laps.copy()
@@ -154,7 +157,7 @@ class F1RaceData(F1Data):
         )
 
         #make a color palette associating team names to hex codes
-        team_palette = {team: fastf1.plotting.get_team_color(team, session=race)
+        team_palette = {team: fastf1.plotting.get_team_color(team, session=session)
                         for team in team_order}
 
     
@@ -172,10 +175,10 @@ class F1RaceData(F1Data):
             capprops=dict(color="white"),
         )
 
-        plt.title(f"{self.year} {grand_prix}")
+        plt.suptitle(f"{self.year} {session.event['EventName']} Team Pace Comparison")
         plt.grid(visible=False)
 
-        #x axis is doesn't do anything for team pace comparison as it is just a comparison
+        #x axis is doesn't do anything for team pace comparison as it is just a comparison and so its all relative
         ax.set(xlabel=None)
         plt.tight_layout()
         buf = BytesIO()
@@ -294,7 +297,7 @@ class F1RaceData(F1Data):
                 previous_stint_end += row["StintLength"]
                 
         #make the plot more readable and intuitive
-        plt.title(f"{self.year} {grand_prix} Strategies")
+        plt.suptitle(f"{self.year} {session.event['EventName']} Strategies")
         plt.xlabel("Lap Number")
         plt.grid(False)
         #invert the y-axis so drivers that finish higher are closer to the top
@@ -362,7 +365,7 @@ class F1QualiData(F1Data):
 
         lap_time_string = strftimedelta(pole_lap['LapTime'], '%m:%s.%ms')
 
-        plt.suptitle(f"{session.event['EventName']} {session.event.year} Qualifying\n"
+        plt.suptitle(f"{session.event['EventName']} {self.year} Qualifying\n"
                     f"Fastest Lap: {lap_time_string} ({pole_lap['Driver']})")
 
         buf = BytesIO()
@@ -410,7 +413,7 @@ class F1QualiData(F1Data):
 
         plt.suptitle(
             f"Fastest Lap Gear Shift Visualization\n"
-            f"{lap['Driver']} - {session.event['EventName']} {session.event.year}"
+            f"{lap['Driver']} - {session.event['EventName']} {self.year}"
         )
         
         #add a colorbar to the plot. Shift the colorbar ticks by +0.5 so that they

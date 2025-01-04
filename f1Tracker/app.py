@@ -43,11 +43,16 @@ def send_verification_email(email, token):
 def generate_token():
     return secrets.token_hex(3)
 
-@app.route("/db_init")
 def db_init():
-    db.init_db_sql_file()
-    app.logger.info("Database Initalised")
-    return 'OK Database Initalised'
+    try:
+        # Check if the database file exists
+        if not os.path.exists('./f1Tracker/schema.sql'):  
+            db.init_db_sql_file() #db.py create database
+            app.logger.info("Database Initialised")
+        else:
+            app.logger.info("Database not initatied, it already exists")
+    except Exception as e:
+        app.logger.warning(f'Issue with Initialising Database: {e}')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -401,7 +406,6 @@ def admin_terminal():
         #check for correct admin perms before carrying out action
         if action == 'send_newsletter' and admin_permissions >= 1:
             send_newsletter()
-            flash("Newsletter sent successfully!", "success")
 
         elif action == 'add_admin' and admin_permissions >= 3:
             level = int(request.form.get('admin_level', 1))
@@ -633,43 +637,52 @@ def getSignedIn():
     except:
         return False
     
-@app.route('/send-newsletter')
 def send_newsletter():
     try:
-        #get graphs
-        grand_prix = f1_data_race.get_last_grand_prix()
-        position_change_graph = f1_data_race.get_positions_change_during_a_race(grand_prix)
-        quali_results_graph = f1_data_quali.get_quali_results_overview(grand_prix)
-        team_pace_comparison_graph = f1_data_race.get_team_pace_comparison(grand_prix)
-
-        #list of graphs to be attached
-        graphs = [
-            ("Position Change During Race", position_change_graph),
-            ("Qualifying Results Overview", quali_results_graph),
-            ("Team Pace Comparison", team_pace_comparison_graph)
-        ]
         
-        #get newsletter subscribers
+        #get last grand prix for the parameter for the generating graphs
+        grand_prix = f1_data_race.get_last_grand_prix()
+        
+        #list of graphs with their Content-ID so that they can be displayed in the html
+        graphs = [
+            {"title": "Position Change During Race", "data": f1_data_race.get_positions_change_during_a_race(grand_prix), "cid": "graph_0"},
+            {"title": "Qualifying Results Overview", "data":  f1_data_quali.get_quali_results_overview(grand_prix), "cid": "graph_1"},
+            {"title": "Team Pace Comparison", "data": f1_data_race.get_team_pace_comparison(grand_prix), "cid": "graph_2"},
+            {"title": "Gear Shifts", "data": f1_data_quali.get_gear_shifts(grand_prix), "cid": "graph_3"},
+            {"title": "Tyre Stratagies", "data": f1_data_race.get_tyre_strategies(grand_prix), "cid": "graph_4"}
+        ]
+
+        #get everyone signed up for newsletter (subscribers)
         subscribers = db.query_db("SELECT firstName, email FROM users WHERE newsletter = 1")
 
-        #send to all subscribers
         for subscriber in subscribers:
-        
+            #setting up the email
             email = subscriber['email']
+            name = subscriber['firstName']
             msg = Message("F1 Race Update - Newsletter", recipients=[email])
-            msg.body = "Dear Subscriber,\n\nHere is your latest F1 race update, with graphs for the latest race."
 
-            #attach the graphs
-            for graph_title, graph_data in graphs:
-                graph_file = BytesIO(graph_data.read())  # Assuming graph_data is a file-like object
-                msg.attach(f"{graph_title}.png", "image/png", graph_file.read())
-                
+            #attach graphs 
+            for graph in graphs:
+                graph_file = BytesIO(graph['data'].read())
+                msg.attach(
+                    f"{graph['title']}.png", 
+                    "image/png", 
+                    graph_file.read()
+                )
+
+            #html
+            msg.html = render_template('newsletter.html', name=name, graphs=graphs)
+
+            #send the email
             mail.send(msg)
 
-        return "Newsletter sent successfully!", 200
+        #output to admin/terminal
+        app.logger.info("Newsletter Sent Successfully!")
+        flash("Newsletter Sent Successfully!", 'success')
 
     except Exception as e:
-        return f"Error sending newsletter: {e}", 500
+        app.logger.warning(f"Error sending newsletter: {e}")
+        flash("Error sending newsletter!", 'danger')
 
 def get_team_logo():
    
@@ -683,9 +696,7 @@ def get_team_logo():
                 """
             result = db.query_db(query, [session['email']], one=True)
             if result:
-                app.logger.info(f'Result looks like this {result}')
                 fav_team = result['teamName'].lower().replace(' ', '')
-                app.logger.info(f'fav_team looks like this {fav_team}')
                 return f"{fav_team}.png"
             else: 
                 return 'default.png'
@@ -718,5 +729,6 @@ def get_payload():
 
 @app.route('/')
 def home():
+    db_init()
     payload = get_payload()
     return render_template('index.html', data=payload)
