@@ -17,6 +17,8 @@ database.db
 f1db_csv
 environmentVariables.env
 .DS_Store
+cert.pem
+key.pem
 
 # Include tracked hidden files and directories in search and diff tools
 !.dockerignore

@@ -36,9 +36,13 @@ f1_data_quali = f1data.F1QualiData()
 f1_data_upcoming = f1data.F1UpcomingData()
 
 def send_verification_email(email, token):
-    emailMessage = Message('Your Verification Code', recipients=[email])
-    emailMessage.body = f'Your verification code is: {token}'
-    mail.send(emailMessage)
+    try:
+        emailMessage = Message('Your Verification Code', recipients=[email])
+        emailMessage.body = f'Your verification code is: {token}'
+        mail.send(emailMessage)
+    except Exception as e:
+        app.logger.error(f'Error sending email: {e}')
+        return flash('Error sending email, please try again', 'error')
 
 def generate_token():
     return secrets.token_hex(3)
@@ -111,25 +115,29 @@ def generate_reset_token(user_email):
     return token
 
 def send_reset_email(user_email):
+    try:
+        token = generate_reset_token(user_email)
+        reset_url = url_for('reset_password', token=token, _external=True)
 
-    token = generate_reset_token(user_email)
-    reset_url = url_for('reset_password', token=token, _external=True)
+        subject = "Password Reset Request"
+        body = f"""
+        Hi, 
 
-    subject = "Password Reset Request"
-    body = f"""
-    Hi, 
+        You requested a password reset. Click the link below to reset your password:
+        
+        {reset_url}
+        
+        If you did not request this, ignore this email.
 
-    You requested a password reset. Click the link below to reset your password:
+        F1 Tracker
+        """
+        msg = Message(subject=subject, recipients=[user_email], body=body)
+        mail.send(msg)
+
+    except Exception as e: 
+        app.logger.error(f'Error sending email: {e}')
+        return flash('Error sending email, please try again later.', 'error')
     
-    {reset_url}
-    
-    If you did not request this, ignore this email.
-
-    F1 Tracker
-    """
-    msg = Message(subject=subject, recipients=[user_email], body=body)
-    mail.send(msg)
-
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     query = '''
@@ -386,7 +394,7 @@ def admin_terminal():
 
     #fetch users with admin status
     query = f'''
-        SELECT users.userID, users.email, users.firstname, users.verified, 
+        SELECT users.userID, users.email, users.firstName, users.verified, 
                users.newsletter, users.driverID, users.teamID,
                CASE WHEN admin.userID IS NOT NULL THEN admin.permissions ELSE 0 END AS is_admin
         FROM users
@@ -409,8 +417,10 @@ def admin_terminal():
 
         elif action == 'add_admin' and admin_permissions >= 3:
             level = int(request.form.get('admin_level', 1))
-            add_admin(email, level)
-            flash(f"{email} added as admin!", "success")
+            if add_admin(email, level):
+                flash(f"{email} added as admin!", "success")
+            else:
+                flash(f"User with email {email}, not found", 'danger' )
 
         elif action == 'remove_admin' and admin_permissions >= 3:
             remove_admin(user_id)
