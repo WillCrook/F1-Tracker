@@ -49,40 +49,58 @@
       }
     </style>
     <script>
-      // Function to update the button text based on the selected dropdown item
+      //function to update the button text based on the selected dropdown item
       function updateDropdownText(buttonId, selectedItem) {
         const button = document.getElementById(buttonId);
-        button.textContent = selectedItem;  // Update the button text
+        button.textContent = selectedItem;  //update the button text
       }
     
-      //function to trigger graph generation based on the selected dropdown values
-      function generateGraph() {
-        const graphType = document.getElementById('graphTypeButton').textContent;
-        const grandPrix = document.getElementById('grandPrixButton').textContent;
-    
-        if (graphType === 'Select Graph Type' || grandPrix === 'Select Grand Prix') {
-          alert('Please select both Graph Type and Grand Prix.');
-          return;
-        }
+      //function to trigger graph generation based on the selected dropdown values and also to disable button spamming until the graph is generated
+     function generateGraph() {
+       const graphType = document.getElementById('graphTypeButton').textContent;
+       const grandPrix = document.getElementById('grandPrixButton').textContent;
+       const btn = document.getElementById('generateGraphButton');
 
-        //flash message for generating graph
-        const toastMessage = `Generating ${graphType} graph for ${grandPrix}!`;
-        showToast(toastMessage, 'info');
 
-        //fetch to generate the graph
-        fetch(`/generate-graph?graphType=${encodeURIComponent(graphType)}&grandPrix=${encodeURIComponent(grandPrix)}`)
-          .then(response => response.blob())
-          .then(imageBlob => {
-            const imageUrl = URL.createObjectURL(imageBlob);
-            document.getElementById('graphImage').src = imageUrl;
-            //flash another message when the graph is loaded
-            showToast('Graph successfully generated!', 'success');
-          })
-          .catch(error => {
-            console.error('Error generating graph:', error);
-            showToast('Error generating the graph. Please try again.', 'danger');
-          });
-      }
+       if (graphType === 'Select Graph Type' || grandPrix === 'Select Grand Prix') {
+         alert('Please select both Graph Type and Grand Prix.');
+         return;
+       }
+
+
+       //change button message to say generating and disable it for a more accessible user interface design
+       btn.disabled = true;
+       btn.textContent = 'Generating...';
+       btn.classList.remove('btn-primary');
+       btn.classList.add('btn-success');
+
+
+       //flash message for generating graph
+       const toastMessage = `Generating ${graphType} graph for ${grandPrix}!`;
+       showToast(toastMessage, 'info');
+
+
+       //fetch to generate the graph
+fetch(`/generate-graph?graphType=${encodeURIComponent(graphType)}&grandPrix=${encodeURIComponent(grandPrix)}`)
+         .then(response => response.blob())
+         .then(imageBlob => {
+           const imageUrl = URL.createObjectURL(imageBlob);
+           document.getElementById('graphImage').src = imageUrl;
+          //flash another message for generating graph
+           showToast('Graph successfully generated!', 'success');
+         })
+         .catch(error => {
+           console.error('Error generating graph:', error);
+           showToast('Error generating the graph. Please try again.', 'danger');
+         })
+          //change the button back to its red colour and enable so the user can now generate a new graph 
+         .finally(() => {
+           btn.disabled = false;
+           btn.textContent = 'Generate Graph';
+           btn.classList.remove('btn-success');
+           btn.classList.add('btn-primary');
+         });
+     }
 
       //helper function to show toasts
       function showToast(message, category) {
