@@ -27,7 +27,7 @@ mail = Mail(app)
 cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'}) 
 
 #app secret key - set using python -c 'import secrets; print(secrets.token_hex())'
-app.secret_key = b'9417b2d7beab235eae274c28716b73e3c06fcb9a898bd4a930301cc4c3a2df9d'
+app.secret_key = os.getenv('SECRET_KEY')
 
 signedIn = False
 
