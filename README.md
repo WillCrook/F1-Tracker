@@ -1,4 +1,4 @@
-# F1 Tracker A Level Comp Sci NEA
+# F1 Tracker
 
 ## Setup Virtual Environment
 ```
