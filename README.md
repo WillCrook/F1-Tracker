@@ -28,7 +28,7 @@ Machine Learning: XGBoost
 Data Handling: FastF1
 Visualisation: Matplotlib
 Frontend: HTML, CSS, Jinja templates, Bootstrap
-Storage: SQLite database (Flask-compatible)alifying Visualisation
+Storage: SQLite database
 
 
 ## Setup Virtual Environment
