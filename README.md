@@ -1,5 +1,66 @@
 # F1 Tracker
 
+F1 Tracker is a web application that collects, analyses, visualises, and predicts Formula 1 performance using real race data. Think of it as a lightweight blend of F1 TV timing screens and a data science dashboard, wrapped in a Flask web app.
+
+⸻
+
+## Core features
+
+	•	 Race & QuF1 Tracker is a web application that collects, analyses, visualises, and predicts Formula 1 performance using real race data. Think of it as a lightweight blend of F1 TV timing screens and a data science dashboard, wrapped in a Flask web app.
+
+⸻
+
+🚗 What it does
+
+Core features
+	•	Race & Qualifying Visualisation
+Interactive plots of laps, pace, tyre performance, and session trends (powered by Matplotlib).
+	•	Race & Quali Predictions
+Machine-learning forecasts built using XGBoost, trained on historical session data using the old Ergast.
+	•	Live Data Handling
+Uses FastF1 to fetch official timing and telemetry data.
+	•	User Accounts
+Login system with personalised settings.
+	•	Team Personalisation
+Users can select a favourite team
+	•	Newsletter System
+Opt-in updates about predictions, race results, and model performance.
+	•	Admin Control Panel
+Manage users, models, and site content from a protected backend interface.
+
+⸻
+
+🛠️ Tech Stack
+	•	Backend: Python + Flask
+	•	Machine Learning: XGBoost
+	•	Data Handling: FastF1
+	•	Visualisation: Matplotlib
+	•	Frontend: HTML, CSS, Jinja templates, Bootstrap
+	•	Storage: SQLite database (Flask-compatible)alifying Visualisation
+Interactive plots of laps, pace, tyre performance, and session trends (powered by Matplotlib).
+	•	Race & Quali Predictions
+Machine-learning forecasts built using XGBoost, trained on historical session data.
+	•	Live Data Handling
+Uses FastF1 to fetch official timing and telemetry data.
+	•	User Accounts
+Login system with personalised settings.
+	•	Team Personalisation
+Users can select a favourite team and tailor the dashboard to it — like having your own mini “pit wall”.
+	•	Newsletter System
+Opt-in updates about predictions, race results, and model performance.
+	•	Admin Control Panel
+Manage users, models, and site content from a protected backend interface.
+
+⸻
+
+🛠️ Tech Stack
+	•	Backend: Python + Flask
+	•	Machine Learning: XGBoost
+	•	Data Handling: FastF1
+	•	Visualisation: Matplotlib
+	•	Frontend: HTML, CSS, Jinja templates
+	•	Storage: SQLite (Flask-compatible)
+
 ## Setup Virtual Environment
 ```
 python -m venv .venv
