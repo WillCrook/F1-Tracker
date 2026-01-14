@@ -6,19 +6,25 @@ F1 Tracker is a web application that collects, analyses, visualises, and predict
 
 ## Core features
 
-•	Race & Qualifying Visualisation
+**Race & Qualifying Visualisation**
 Interactive plots of laps, pace, tyre performance, and session trends (powered by Matplotlib).
-•	Race & Quali Predictions
+
+**Race & Quali Predictions**
 Machine-learning forecasts built using XGBoost, trained on historical session data using the old Ergast.
-•	Live Data Handling
-Uses FastF1 to fetch official timing and telemetry data.
-•	User Accounts
+
+**(Almost) Live Data Handling**
+Uses FastF1 to fetch  timing and telemetry data as soon as the session is over.
+
+**User Accounts**
 Login system with personalised settings.
-•	Team Personalisation
+
+**Team Personalisation**
 Users can select a favourite team
-•	Newsletter System
-Opt-in updates about predictions, race results, and model performance.
-•	Admin Control Panel
+
+**Newsletter System**
+Opt-in updates about predictions, race results and key data visualisations.
+
+**Admin Control Panel**
 Manage users, models, and site content from a protected backend interface.
 
 ## Tech Stack
